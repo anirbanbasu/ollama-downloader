@@ -1,0 +1,101 @@
+from pydantic import BaseModel, Field
+from typing import Optional, Tuple
+
+
+class OllamaServer(BaseModel):
+    url: str = Field(
+        default="http://localhost:11434",
+        description="URL of the Ollama server.",
+    )
+    api_key: Optional[str] = Field(
+        default=None,
+        description="API key for the Ollama server, if required.",
+    )
+
+
+class OllamaStorage(BaseModel):
+    models_path: str = Field(
+        ...,
+        description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
+    )
+    registry_base_url: Optional[str] = Field(
+        default="https://registry.ollama.ai/v2/library/",
+        description="URL of the remote registry for Ollama models. If not provided, local storage will be used.",
+    )
+    verify_ssl: Optional[bool] = Field(
+        default=True,
+        description="Whether to verify SSL certificates when connecting to the Ollama server or registry. Set to False to disable SSL verification (not recommended for production use).",
+    )
+    timeout: Optional[float] = Field(
+        default=120.0,
+        description="Timeout for HTTP requests to the Ollama server or registry, in seconds. Default is 120 seconds.",
+    )
+    user_group: Optional[Tuple[str, str]] = Field(
+        default=None,
+        description="A tuple specifying the username and the group that should own the Ollama models path. If not provided, the current user and group will be used.",
+    )
+
+
+class AppSettings(BaseModel):
+    ollama_server: OllamaServer = Field(
+        ...,
+        description="Settings for the Ollama server connection.",
+    )
+    ollama_storage: OllamaStorage = Field(
+        ...,
+        description="Settings for the Ollama model storage in the filesystem.",
+    )
+
+
+class ImageManifestConfig(BaseModel):
+    mediaType: str = Field(
+        ...,
+        description="The media type of the image manifest configuration.",
+    )
+    size: int = Field(
+        ...,
+        description="The size of the image manifest configuration in bytes.",
+    )
+    digest: str = Field(
+        ...,
+        description="The digest of the image manifest configuration, used for content addressing.",
+    )
+
+
+class ImageManifestLayerEntry(BaseModel):
+    mediaType: str = Field(
+        ...,
+        description="The media type of the layer.",
+    )
+    size: int = Field(
+        ...,
+        description="The size of the layer in bytes.",
+    )
+    digest: str = Field(
+        ...,
+        description="The digest of the layer, used for content addressing.",
+    )
+    urls: Optional[list[str]] = Field(
+        default=None,
+        description="Optional list of URLs where the layer can be downloaded from. This is useful for layers that are hosted on multiple locations.",
+    )
+
+
+class ImageManifest(BaseModel):
+    # See: https://distribution.github.io/distribution/spec/manifest-v2-2/#image-manifest
+    schemaVersion: int = Field(
+        ...,
+        description="The schema version of the image manifest.",
+    )
+    mediaType: str = Field(
+        ...,
+        description="The media type of the image manifest.",
+    )
+    config: ImageManifestConfig = Field(
+        ...,
+        description="Configuration for the image manifest, including media type, size, and digest.",
+    )
+    layers: list[ImageManifestLayerEntry] = Field(
+        ...,
+        description="List of layers in the image manifest, each with its media type, size, and digest.",
+    )
