@@ -206,6 +206,8 @@ def _save_manifest_to_destination(
     if settings.ollama_storage.user_group:
         user, group = settings.ollama_storage.user_group
         shutil.chown(target_file, user, group)
+        # The directory ownership must also be changed because it may have been created by a different user, most likely a sudoer
+        shutil.chown(manifests_dir, user, group)
         logger.info(
             f"Changed ownership of {target_file} to user: {user}, group: {group}"
         )
@@ -259,6 +261,8 @@ def _copy_blob_to_destination(
     if settings.ollama_storage.user_group:
         user, group = settings.ollama_storage.user_group
         shutil.chown(target_file, user, group)
+        # Set permissions to rw-r-----
+        os.chmod(target_file, 0o640)
         logger.info(
             f"Changed ownership of {target_file} to user: {user}, group: {group}"
         )
