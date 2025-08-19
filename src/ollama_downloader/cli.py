@@ -7,8 +7,7 @@ import typer
 import httpx
 import ssl
 import hashlib
-import rich
-
+from rich.progress import Progress, BarColumn, DownloadColumn, TransferSpeedColumn
 from rich import print as print
 from rich import print_json as printj
 
@@ -21,21 +20,34 @@ app = typer.Typer(
     help="A command-line interface for the Ollama downloader.",
 )
 
+SETTINGS_FILE = "conf/settings.json"
+
 
 def _get_settings() -> AppSettings:
     """Load settings from the configuration file."""
     try:
-        with open("conf/settings.json", "r") as f:
+        with open(SETTINGS_FILE, "r") as f:
             return AppSettings.model_validate_json(f.read())
     except FileNotFoundError:
-        print("Configuration file not found. Please create 'conf/settings.json'.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error loading settings: {e}")
+        print(f"Configuration file not found. Please create '{SETTINGS_FILE}'.")
         sys.exit(1)
 
 
 settings = _get_settings()
+
+
+def _get_manifest_url(model: str, tag: str) -> str:
+    """
+    Construct the URL for a model manifest based on its name and tag.
+    """
+    return f"{settings.ollama_storage.registry_base_url}{model}/manifests/{tag}"
+
+
+def _get_blob_url(model: str, digest: str) -> str:
+    """
+    Construct the URL for a BLOB based on its digest.
+    """
+    return f"{settings.ollama_storage.registry_base_url}{model}/blobs/{digest.replace(':', '-')}"
 
 
 def _get_httpx_client(verify: bool, timeout: float) -> httpx.Client:
@@ -54,15 +66,17 @@ def _get_httpx_client(verify: bool, timeout: float) -> httpx.Client:
         verify=verify if (verify is not None and verify is False) else ctx,
         follow_redirects=True,
         trust_env=True,
+        http2=True,
         timeout=timeout,
     )
     return client
 
 
-def _download_file_from_url(url: str, size: int | None = None) -> None:
+def _download_model_blob(model: str, digest: str) -> None:
     """
-    Download a file from a URL and save it to the specified destination.
+    Download a file given the digest and save it to the specified destination.
     """
+    url = _get_blob_url(model=model, digest=digest)
     try:
         sha256_hash = hashlib.new("sha256")
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
@@ -70,13 +84,14 @@ def _download_file_from_url(url: str, size: int | None = None) -> None:
                 settings.ollama_storage.verify_ssl, settings.ollama_storage.timeout
             ).stream("GET", url) as response:
                 response.raise_for_status()
-                total = size or int(response.headers["Content-Length"])
+                ic(response.headers)
+                total = int(response.headers["Content-Length"])
 
-                with rich.progress.Progress(
+                with Progress(
                     "[progress.percentage]{task.percentage:>3.0f}%",
-                    rich.progress.BarColumn(bar_width=None),
-                    rich.progress.DownloadColumn(),
-                    rich.progress.TransferSpeedColumn(),
+                    BarColumn(bar_width=None),
+                    DownloadColumn(),
+                    TransferSpeedColumn(),
                 ) as progress:
                     download_task = progress.add_task("Download", total=total)
                     for chunk in response.iter_bytes():
@@ -86,7 +101,16 @@ def _download_file_from_url(url: str, size: int | None = None) -> None:
                             download_task, completed=response.num_bytes_downloaded
                         )
         print(f"Downloaded {url} to {temp_file.name}")
-        ic(sha256_hash.hexdigest())
+        content_digest = sha256_hash.hexdigest()
+        ic(content_digest)
+        if digest[7:] != content_digest:
+            print(
+                f"[red]Digest mismatch: expected {digest[7:]}, got {content_digest}[/red]"
+            )
+        else:
+            print(
+                f"[green]Digest verified: {content_digest} matches expected digest.[/green]"
+            )
     except httpx.HTTPStatusError as e:
         print(f"Failed to download {url}: {e}")
         sys.exit(1)
@@ -117,7 +141,7 @@ def download(
     ] = "latest",
 ) -> None:
     """Download a model from the Ollama server."""
-    manifest_url = f"{settings.ollama_storage.registry_base_url}{model}/manifests/{tag}"
+    manifest_url = _get_manifest_url(model=model, tag=tag)
     print(
         f"Downloading and validating model manifest: [bold cyan]{model}:{tag}[/bold cyan] from {manifest_url}"
     )
@@ -130,19 +154,21 @@ def download(
             response.raise_for_status()
             manifest = ImageManifest.model_validate_json(response.text, strict=False)
             printj(manifest.model_dump_json())
-            ic(hashlib.sha256(response.content).hexdigest())
+            print(
+                f"Downloading manifest [bold cyan]{manifest.config.digest}[/bold cyan]"
+            )
+            _download_model_blob(
+                model=model,
+                digest=manifest.config.digest,
+            )
             for layer in manifest.layers:
                 print(
                     f"Layer: [bold cyan]{layer.mediaType}[/bold cyan], Size: [bold green]{layer.size}[/bold green] bytes, Digest: [bold yellow]{layer.digest}[/bold yellow]"
                 )
-                print(
-                    f"BLOB URL: {settings.ollama_storage.registry_base_url}{model}/blobs/{layer.digest.replace(':', '-')}"
-                )
-                # if "model" not in layer.mediaType:
                 print(f"Downloading layer [bold cyan]{layer.digest}[/bold cyan]")
-                _download_file_from_url(
-                    url=f"{settings.ollama_storage.registry_base_url}{model}/blobs/{layer.digest.replace(':', '-')}",
-                    size=layer.size,
+                _download_model_blob(
+                    model=model,
+                    digest=layer.digest,
                 )
         except httpx.HTTPStatusError as e:
             print(f"Failed to download model manifest: {e}")
