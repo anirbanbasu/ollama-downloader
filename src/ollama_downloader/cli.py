@@ -37,6 +37,7 @@ def _get_settings() -> AppSettings:
     """
     try:
         with open(SETTINGS_FILE, "r") as f:
+            # Parse the JSON file into the AppSettings model
             parsed_settings = AppSettings.model_validate_json(f.read())
         return parsed_settings
     except FileNotFoundError:
@@ -199,6 +200,12 @@ def _save_manifest_to_destination(
     with open(target_file, "w") as f:
         f.write(data)
         logger.info(f"Saved manifest to {target_file}")
+    if settings.ollama_storage.user_group:
+        user, group = settings.ollama_storage.user_group
+        shutil.chown(target_file, user, group)
+        logger.info(
+            f"Changed ownership of {target_file} to user: {user}, group: {group}"
+        )
     return target_file
 
 
@@ -246,6 +253,12 @@ def _copy_blob_to_destination(
     else:
         shutil.copyfile(source, target_file)
         logger.info(f"Copied {source} to {target_file}")
+    if settings.ollama_storage.user_group:
+        user, group = settings.ollama_storage.user_group
+        shutil.chown(target_file, user, group)
+        logger.info(
+            f"Changed ownership of {target_file} to user: {user}, group: {group}"
+        )
     return True, target_file
 
 
