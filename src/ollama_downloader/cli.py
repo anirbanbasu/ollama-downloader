@@ -1,3 +1,4 @@
+import datetime
 import os
 import shutil
 import sys
@@ -14,6 +15,8 @@ from rich.progress import Progress, BarColumn, DownloadColumn, TransferSpeedColu
 from rich.logging import RichHandler
 from rich import print as print
 from rich import print_json as printj
+
+from ollama import Client as OllamaClient
 
 from ollama_downloader.data_models import AppSettings, ImageManifest
 
@@ -291,11 +294,6 @@ def download(
             response.raise_for_status()
             # Validate the response as an ImageManifest but don't enforce strict validation
             manifest = ImageManifest.model_validate_json(response.text, strict=False)
-            _save_manifest_to_destination(
-                data=response.text,
-                model=model,
-                tag=tag,
-            )
             logger.info(
                 f"Downloading model configuration [bold cyan]{manifest.config.digest}[/bold cyan]"
             )
@@ -335,6 +333,41 @@ def download(
                         f"Failed to copy model layer {layer.digest} to {layer_copy_destination}."
                     )
                     sys.exit(1)
+            # Save the manifest to the destination
+            _save_manifest_to_destination(
+                data=response.text,
+                model=model,
+                tag=tag,
+            )
+            ts_approximate_manifest_save = datetime.datetime.now()
+            # Finally check if it exists in the Ollama
+            ollama_client = OllamaClient(
+                host=settings.ollama_server.url,
+                # TODO: Add API key authentication logic
+            )
+            models_list = ollama_client.list()
+            found_model = None
+            for model_info in models_list.models:
+                if (
+                    model_info.model == f"{model}:{tag}"
+                    # TODO: Is this timestamp assumption right that the listing is completed within a minute of saving?
+                    and abs(
+                        model_info.modified_at.replace(tzinfo=None)
+                        - ts_approximate_manifest_save
+                    )
+                    < datetime.timedelta(minutes=1)
+                ):
+                    found_model = model_info
+                    break
+            if found_model:
+                logger.info(
+                    f"[green]Model [bold]{found_model.model}[/bold] successfully downloaded and saved on {found_model.modified_at:%B %d %Y at %H:%M:%S}.[/green]"
+                )
+            else:
+                logger.error(
+                    f"[red]Model [bold]{model}:{tag}[/bold] could not be found in Ollama server after download.[/red]"
+                )
+                sys.exit(1)
         except httpx.HTTPStatusError as e:
             print(f"Failed to download model manifest: {e}")
             sys.exit(1)
