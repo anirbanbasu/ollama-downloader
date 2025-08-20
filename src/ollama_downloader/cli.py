@@ -183,13 +183,16 @@ def _save_manifest_to_destination(
         str: The path to the saved manifest file.
     """
     ollama_registry_host = urlparse(settings.ollama_storage.registry_base_url).hostname
-    manifests_dir = os.path.join(
+    manifests_toplevel_dir = os.path.join(
         (
             os.path.expanduser(settings.ollama_storage.models_path)
             if settings.ollama_storage.models_path.startswith("~")
             else settings.ollama_storage.models_path
         ),
         "manifests",
+    )
+    manifests_dir = os.path.join(
+        manifests_toplevel_dir,
         ollama_registry_host,
         "library",
         model,
@@ -208,6 +211,7 @@ def _save_manifest_to_destination(
         shutil.chown(target_file, user, group)
         # The directory ownership must also be changed because it may have been created by a different user, most likely a sudoer
         shutil.chown(manifests_dir, user, group)
+        shutil.chown(manifests_toplevel_dir, user, group)
         logger.info(
             f"Changed ownership of {target_file} to user: {user}, group: {group}"
         )
@@ -261,6 +265,7 @@ def _copy_blob_to_destination(
     if settings.ollama_storage.user_group:
         user, group = settings.ollama_storage.user_group
         shutil.chown(target_file, user, group)
+        shutil.chown(blobs_dir, user, group)
         # Set permissions to rw-r-----
         os.chmod(target_file, 0o640)
         logger.info(
