@@ -1,8 +1,0 @@
-{
-  "ollama_server": {
-    "url": "http://localhost:11434"
-  },
-  "ollama_storage": {
-    "models_path": "~/.ollama/models"
-  }
-}
