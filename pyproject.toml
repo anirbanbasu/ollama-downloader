@@ -10,6 +10,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "httpx[http2]>=0.28.1",
+    "lxml>=6.0.0",
     "ollama>=0.5.3",
     "typer>=0.16.0",
 ]

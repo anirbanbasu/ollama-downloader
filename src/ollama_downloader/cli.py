@@ -1,5 +1,6 @@
 import signal
 import sys
+from typing import Optional
 from typing_extensions import Annotated
 import typer
 from rich import print as print
@@ -23,6 +24,34 @@ model_downloader: OllamaModelDownloader = None
 def show_config():
     """Shows the application configuration as JSON."""
     printj(model_downloader.settings.model_dump_json())
+
+
+@app.command()
+def list_models():
+    """Lists all available models."""
+    models = model_downloader.update_models_list()
+    print(models)
+
+
+@app.command()
+def list_tags(
+    model: Annotated[
+        Optional[str],
+        typer.Argument(
+            help="The name of the model to list tags for, e.g., llama3.1. If not provided, all models and their tags will be listed."
+        ),
+    ] = "",
+    update: Annotated[
+        bool,
+        typer.Option(
+            is_flag=True,
+            help="Force update the model list and its tags before listing.",
+        ),
+    ] = False,
+):
+    """Lists all tags for a specific model."""
+    tags = model_downloader.list_models_tags(model=model, update=update)
+    print(tags)
 
 
 @app.command()
