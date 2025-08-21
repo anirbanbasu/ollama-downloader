@@ -2,9 +2,8 @@ import datetime
 import hashlib
 import os
 import shutil
-import sys
 import tempfile
-from typing import Set
+from typing import List, Set, Tuple
 from urllib.parse import urlparse
 
 from ollama_downloader.data_models import AppSettings, ImageManifest
@@ -110,18 +109,18 @@ class OllamaModelDownloader:
             response.raise_for_status()
             return response.text
 
-    def _download_model_blob(self, model: str, digest: str) -> tuple:
+    def _download_model_blob(self, model: str, named_digest: str) -> tuple:
         """
         Download a file given the digest and save it to the specified destination.
 
         Args:
             model (str): The name of the model, e.g., llama3.1.
-            digest (str): The digest of the BLOB prefixed with the digest algorithm followed by a colon character.
+            named_digest (str): The digest of the BLOB prefixed with the digest algorithm followed by a colon character.
 
         Returns:
             tuple: A tuple containing the path to the downloaded file and its computed SHA256 digest.
         """
-        url = self._get_blob_url(model=model, digest=digest)
+        url = self._get_blob_url(model=model, digest=named_digest)
         # try:
         sha256_hash = hashlib.new("sha256")
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
@@ -211,7 +210,7 @@ class OllamaModelDownloader:
     def _copy_blob_to_destination(
         self,
         source: str,
-        digest: str,
+        named_digest: str,
         computed_digest: str,
     ) -> tuple:
         """
@@ -219,17 +218,15 @@ class OllamaModelDownloader:
 
         Args:
             source (str): The path to the downloaded BLOB.
-            destination (str): The path where the BLOB should be copied.
-            digest (str): The expected digest of the BLOB.
+            named_digest (str): The expected digest of the BLOB prefixed with the digest algorithm followed by the colon character.
             computed_digest (str): The computed digest of the BLOB.
-            move_instead_of_copy (bool): Whether to move the file instead of copying it.
 
         Returns:
             tuple: A tuple containing a boolean indicating success and the path to the copied file.
         """
-        if computed_digest != digest[7:]:
+        if computed_digest != named_digest[7:]:
             logger.error(
-                f"Digest mismatch: expected {digest[7:]}, got {computed_digest}"
+                f"Digest mismatch: expected {named_digest[7:]}, got {computed_digest}"
             )
             return False, None
         blobs_dir = os.path.join(
@@ -240,14 +237,14 @@ class OllamaModelDownloader:
             ),
             "blobs",
         )
-        logger.info(f"BLOB {digest} digest verified successfully.")
+        logger.info(f"BLOB {named_digest} digest verified successfully.")
         if not os.path.isdir(blobs_dir):
             logger.error(f"BLOBS path {blobs_dir} must be a directory.")
             return False, None
         if not os.path.exists(blobs_dir):
             logger.error(f"BLOBS path {blobs_dir} must exist.")
             return False, None
-        target_file = os.path.join(blobs_dir, digest.replace(":", "-"))
+        target_file = os.path.join(blobs_dir, named_digest.replace(":", "-"))
         shutil.move(source, target_file)
         logger.info(f"Moved {source} to {target_file}")
         if self.settings.ollama_storage.user_group:
@@ -273,21 +270,18 @@ class OllamaModelDownloader:
         logger.info(
             f"Downloading model configuration [bold cyan]{manifest.config.digest}[/bold cyan]"
         )
+        # Keep a list of files to be copied but only copy after all downloads have completed successfully.
+        # This is to ensure that we don't copy files that may not be needed if the download fails.
+        # Each tuple in the list contains (source_path, named_digest, computed_digest).
+        files_to_be_copied: List[Tuple[str, str, str]] = []
         # Download the model configuration BLOB
         file_model_config, digest_model_config = self._download_model_blob(
             model=model,
-            digest=manifest.config.digest,
+            named_digest=manifest.config.digest,
         )
-        copy_status, copy_destination = self._copy_blob_to_destination(
-            source=file_model_config,
-            digest=manifest.config.digest,
-            computed_digest=digest_model_config,
+        files_to_be_copied.append(
+            (file_model_config, manifest.config.digest, digest_model_config)
         )
-        if copy_status is False:
-            logger.error(
-                f"Failed to copy model configuration BLOB {manifest.config.digest} to {copy_destination}."
-            )
-            sys.exit(1)
         for layer in manifest.layers:
             logger.debug(
                 f"Layer: [bold cyan]{layer.mediaType}[/bold cyan], Size: [bold green]{layer.size}[/bold green] bytes, Digest: [bold yellow]{layer.digest}[/bold yellow]"
@@ -297,19 +291,19 @@ class OllamaModelDownloader:
             )
             file_layer, digest_layer = self._download_model_blob(
                 model=model,
-                digest=layer.digest,
+                named_digest=layer.digest,
             )
-            layer_copy_status, layer_copy_destination = self._copy_blob_to_destination(
-                source=file_layer,
-                digest=layer.digest,
-                computed_digest=digest_layer,
+            files_to_be_copied.append((file_layer, layer.digest, digest_layer))
+        # All BLOBs have been downloaded, now copy them to their appropriate destinations.
+        for source, named_digest, computed_digest in files_to_be_copied:
+            copy_status, copy_destination = self._copy_blob_to_destination(
+                source=source,
+                named_digest=named_digest,
+                computed_digest=computed_digest,
             )
-            if layer_copy_status is False:
-                logger.error(
-                    f"Failed to copy model layer {layer.digest} to {layer_copy_destination}."
-                )
-                sys.exit(1)
-        # Save the manifest to the destination
+            if copy_status is False:
+                logger.error(f"Failed to copy {named_digest} to {copy_destination}.")
+        # Finally, save the manifest to its appropriate destination
         self._save_manifest_to_destination(
             data=manifest_json,
             model=model,
@@ -319,6 +313,7 @@ class OllamaModelDownloader:
         # Finally check if it exists in the Ollama
         ollama_client = OllamaClient(
             host=self.settings.ollama_server.url,
+            # timeout=self.settings.ollama_server.timeout,
             # TODO: Add API key authentication logic
         )
         models_list = ollama_client.list()
