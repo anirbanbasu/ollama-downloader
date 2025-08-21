@@ -1,10 +1,11 @@
 [project]
 name = "ollama-downloader"
 version = "0.1.0"
-description = "Add your description here"
+description = "A model downloader for Ollama, for now."
 readme = "README.md"
 authors = [
-    { name = "Anirban Basu", email = "anirbanbasu@users.noreply.github.com" }
+    { name = "Anirban Basu", email = "anirbanbasu@users.noreply.github.com" },
+    { name = "Jairo Lopez", email = "nacarino@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [

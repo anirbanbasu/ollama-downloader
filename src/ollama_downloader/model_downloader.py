@@ -311,6 +311,9 @@ class OllamaModelDownloader:
         )
         ts_approximate_manifest_save = datetime.datetime.now()
         # Finally check if it exists in the Ollama
+        # Clear the list of unnecessary files before this if errors henceforth are to be tolerated.
+        if not self.settings.ollama_server.remove_downloaded_on_error:
+            self.unnecessary_files.clear()
         ollama_client = OllamaClient(
             host=self.settings.ollama_server.url,
             # timeout=self.settings.ollama_server.timeout,

@@ -5,4 +5,9 @@ _Not to be confused with https://github.com/raffaeleguidi/Ollama-model-downloade
 
 _Inspired by: https://github.com/ollama/ollama/issues/941#issuecomment-2989194688_.
 
-Run `uv run od download smollm2 135m` to download _smollm2:135m_ for example.
+Run `uv run od model-download all-minilm` to download _all-minilm:latest_ for example.
+
+
+`uv pip install -e .`
+
+`sudo .venv/bin/od model-download <model> <tag>`

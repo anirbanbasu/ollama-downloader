@@ -14,6 +14,10 @@ class OllamaServer(BaseModel):
         default=None,
         description="API key for the Ollama server, if required.",
     )
+    remove_downloaded_on_error: bool = Field(
+        default=True,
+        description="Whether to remove downloaded files if the downloaded model cannot be found on the Ollama server, or the Ollama server cannot be accessed.",
+    )
 
 
 class OllamaLibrary(BaseModel):
@@ -31,7 +35,7 @@ class OllamaLibrary(BaseModel):
     )
     timeout: Optional[float] = Field(
         default=120.0,
-        description="Timeout for HTTP requests to the Ollama server or registry, in seconds. Default is 120 seconds.",
+        description="Timeout for HTTP requests to the Ollama server or registry, in seconds.",
     )
     user_group: Optional[Tuple[str, str]] = Field(
         default=None,
