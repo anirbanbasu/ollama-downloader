@@ -184,7 +184,7 @@ Usage: od model-download [OPTIONS] MODEL_TAG
 ╭─ Arguments ──────────────────────────────────────────────────╮
 │ *    model_tag      TEXT  The name of the model and a        │
 │                           specific to download, specified as │
-│                           <model-name>:<tag>, e.g.,          │
+│                           <model>:<tag>, e.g.,               │
 │                           llama3.1:8b. If no tag is          │
 │                           specified, 'latest' will be        │
 │                           assumed.                           │

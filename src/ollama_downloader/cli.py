@@ -61,7 +61,7 @@ def model_download(
     model_tag: Annotated[
         str,
         typer.Argument(
-            help="The name of the model and a specific to download, specified as <model-name>:<tag>, e.g., llama3.1:8b. If no tag is specified, 'latest' will be assumed.",
+            help="The name of the model and a specific to download, specified as <model>:<tag>, e.g., llama3.1:8b. If no tag is specified, 'latest' will be assumed.",
         ),
     ],
 ):
