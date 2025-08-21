@@ -62,6 +62,7 @@ def model_download(
         str, typer.Argument(help="The tag of the model to download, e.g., latest")
     ] = "latest",
 ):
+    """Downloads a specific Ollama model with the given tag."""
     model_downloader.download_model(
         model=model,
         tag=tag,
@@ -71,15 +72,16 @@ def model_download(
 def main():
     """Main entry point for the CLI application."""
 
-    def sigint_handler(signum, frame):
-        typer.echo("Ctrl+C detected. Performing graceful shutdown...")
+    def interrupt_handler(signum, frame):
+        typer.echo("Program interrupt detected. Performing graceful shutdown...")
         # Add your cleanup logic here, e.g., closing files, releasing resources
         if model_downloader:
             model_downloader._cleanup_unnecessary_files()
         # Exit the application gracefully
         sys.exit(0)
 
-    signal.signal(signal.SIGINT, sigint_handler)
+    signal.signal(signal.SIGINT, interrupt_handler)
+    signal.signal(signal.SIGTERM, interrupt_handler)
     # All good so far, let's start the Typer app
     try:
         global model_downloader

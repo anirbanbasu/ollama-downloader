@@ -8,14 +8,18 @@ from typing import List, Set, Tuple
 from urllib.parse import urlparse
 
 from ollama_downloader.data_models import AppSettings, ImageManifest
-from ollama_downloader.common import (
-    logger,
-    get_httpx_client,
-)
+from ollama_downloader.common import logger, get_httpx_client
 import lxml.html
 from ollama import Client as OllamaClient
 
-from rich.progress import Progress, BarColumn, DownloadColumn, TransferSpeedColumn
+from rich.progress import (
+    Progress,
+    BarColumn,
+    TextColumn,
+    DownloadColumn,
+    TransferSpeedColumn,
+    MofNCompleteColumn,
+)
 
 
 class OllamaModelDownloader:
@@ -135,12 +139,16 @@ class OllamaModelDownloader:
                 total = int(response.headers["Content-Length"])
 
                 with Progress(
+                    TextColumn(text_format="[bold blue]{task.description}[/bold blue]"),
                     "[progress.percentage]{task.percentage:>3.0f}%",
                     BarColumn(bar_width=None),
                     DownloadColumn(),
                     TransferSpeedColumn(),
                 ) as progress:
-                    download_task = progress.add_task("Download", total=total)
+                    download_task = progress.add_task(
+                        f"Downloading BLOB {named_digest[:11]}...{named_digest[-4:]}",
+                        total=total,
+                    )
                     for chunk in response.iter_bytes():
                         sha256_hash.update(chunk)
                         temp_file.write(chunk)
@@ -423,16 +431,19 @@ class OllamaModelDownloader:
                     return {}
                 else:
                     if not hasattr(self, "models_tags") or update:
-                        # self.models_tags = {}
+                        logger.debug(
+                            f"Fetching tags for model {model} from the Ollama library."
+                        )
                         tags_response = client.get(
                             f"{self.settings.ollama_library.library_base_url}/{model}/tags"
                         )
                         tags_response.raise_for_status()
+                        logger.debug(f"Parsing tags for model {model}.")
                         parsed_tags_html = lxml.html.document_fromstring(
                             tags_response.text
                         )
                         library_prefix = "/library/"
-                        model_unique_tags: Set[str] = set()
+                        named_model_unique_tags: Set[str] = set()
                         for _, attribute, link, _ in lxml.html.iterlinks(
                             parsed_tags_html
                         ):
@@ -441,8 +452,11 @@ class OllamaModelDownloader:
                             ):
                                 if model not in self.models_tags:
                                     self.models_tags[model] = []
-                                model_unique_tags.add(link.replace(library_prefix, ""))
-                        self.models_tags[model] = list(model_unique_tags)
+                                named_model_unique_tags.add(
+                                    link.replace(library_prefix, "")
+                                )
+                        self.models_tags[model] = list(named_model_unique_tags)
+                        logger.debug(f"Updating tags for model {model} in the cache.")
                         self._save_models_tags_cache()
                     return {model: self.models_tags.get(model, [])}
             else:
@@ -452,26 +466,40 @@ class OllamaModelDownloader:
                     or len(self.models_tags) == 0
                 ):
                     # A full update has been requested
-                    # self.models_tags: dict[str, list] = {}
-                    for m in self.library_models:
-                        tags_response = client.get(
-                            f"{self.settings.ollama_library.library_base_url}/{m}/tags"
+                    model_counter = 0
+                    with Progress(
+                        TextColumn(
+                            text_format="[bold blue]{task.description}[/bold blue]"
+                        ),
+                        "[progress.percentage]{task.percentage:>3.0f}%",
+                        BarColumn(bar_width=None),
+                        MofNCompleteColumn(),
+                    ) as progress:
+                        tags_task = progress.add_task(
+                            "Updating models",
+                            total=len(self.library_models),
                         )
-                        tags_response.raise_for_status()
-                        parsed_tags_html = lxml.html.document_fromstring(
-                            tags_response.text
-                        )
-                        unique_tags: Set[str] = set()
-                        for _, attribute, link, _ in lxml.html.iterlinks(
-                            parsed_tags_html
-                        ):
-                            if attribute == "href" and link.startswith(
-                                f"/library/{m}:"
+                        for m in self.library_models:
+                            tags_response = client.get(
+                                f"{self.settings.ollama_library.library_base_url}/{m}/tags"
+                            )
+                            tags_response.raise_for_status()
+                            parsed_tags_html = lxml.html.document_fromstring(
+                                tags_response.text
+                            )
+                            model_unique_tags: Set[str] = set()
+                            for _, attribute, link, _ in lxml.html.iterlinks(
+                                parsed_tags_html
                             ):
-                                if m not in self.models_tags:
-                                    self.models_tags[m] = []
-                                unique_tags.add(link.replace("/library/", ""))
-                        self.models_tags[m] = list(unique_tags)
+                                if attribute == "href" and link.startswith(
+                                    f"/library/{m}:"
+                                ):
+                                    if m not in self.models_tags:
+                                        self.models_tags[m] = []
+                                    model_unique_tags.add(link.replace("/library/", ""))
+                            self.models_tags[m] = list(model_unique_tags)
+                            model_counter += 1
+                            progress.update(tags_task, completed=model_counter)
                     logger.info(
                         f"Updated {len(self.models_tags)} models with tags from the Ollama library."
                     )
