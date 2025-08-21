@@ -432,7 +432,7 @@ class OllamaModelDownloader:
                             tags_response.text
                         )
                         library_prefix = "/library/"
-                        unique_tags: Set[str] = set()
+                        model_unique_tags: Set[str] = set()
                         for _, attribute, link, _ in lxml.html.iterlinks(
                             parsed_tags_html
                         ):
@@ -441,8 +441,8 @@ class OllamaModelDownloader:
                             ):
                                 if model not in self.models_tags:
                                     self.models_tags[model] = []
-                                unique_tags.add(link.replace(library_prefix, ""))
-                        self.models_tags[model] = list(unique_tags)
+                                model_unique_tags.add(link.replace(library_prefix, ""))
+                        self.models_tags[model] = list(model_unique_tags)
                         self._save_models_tags_cache()
                     return {model: self.models_tags.get(model, [])}
             else:
@@ -461,7 +461,7 @@ class OllamaModelDownloader:
                         parsed_tags_html = lxml.html.document_fromstring(
                             tags_response.text
                         )
-                        # unique_tags: Set[str] = set()
+                        unique_tags: Set[str] = set()
                         for _, attribute, link, _ in lxml.html.iterlinks(
                             parsed_tags_html
                         ):

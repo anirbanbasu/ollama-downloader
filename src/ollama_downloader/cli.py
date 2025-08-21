@@ -1,6 +1,5 @@
 import signal
 import sys
-from typing import Optional
 from typing_extensions import Annotated
 import typer
 from rich import print as print
@@ -36,11 +35,11 @@ def list_models():
 @app.command()
 def list_tags(
     model: Annotated[
-        Optional[str],
+        str | None,
         typer.Argument(
             help="The name of the model to list tags for, e.g., llama3.1. If not provided, all models and their tags will be listed."
         ),
-    ] = "",
+    ] = None,
     update: Annotated[
         bool,
         typer.Option(
