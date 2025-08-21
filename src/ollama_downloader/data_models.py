@@ -63,7 +63,9 @@ class AppSettings(BaseModel):
         try:
             with open(AppSettings._settings_file, "r") as f:
                 # Parse the JSON file into the AppSettings model
-                self.model_validate_json(f.read())
+                new_instance = AppSettings.model_validate_json(f.read())
+            # Update the current instance with the loaded settings
+            self.__dict__.update(new_instance.__dict__)
             return True
         except FileNotFoundError:
             logger.error(
