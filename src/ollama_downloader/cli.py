@@ -27,7 +27,7 @@ def show_config():
 
 @app.command()
 def list_models():
-    """Lists all available models."""
+    """Lists all available models in the Ollama library."""
     models = model_downloader.update_models_list()
     print(models)
 
