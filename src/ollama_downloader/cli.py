@@ -37,7 +37,7 @@ def list_tags(
     model: Annotated[
         str | None,
         typer.Argument(
-            help="The name of the model to list tags for, e.g., llama3.1. If not provided, all models and their tags will be listed."
+            help="The name of the model to list tags for, e.g., llama3.1. If not provided, tags of all models will be listed."
         ),
     ] = None,
     update: Annotated[
@@ -49,20 +49,24 @@ def list_tags(
     ] = False,
 ):
     """Lists all tags for a specific model."""
-    tags = model_downloader.list_models_tags(model=model, update=update)
-    print(tags)
+    models_tags = model_downloader.list_models_tags(model=model, update=update)
+    for model_name, tags in models_tags.items():
+        print(f"[bold]Model[/bold]: {model_name}")
+        if tags:
+            print(f"\t[bold]Tags[/bold] ({len(tags)}): {tags}")
 
 
 @app.command()
 def model_download(
-    model: Annotated[
-        str, typer.Argument(help="The name of the model to download, e.g., llama3.1")
+    model_tag: Annotated[
+        str,
+        typer.Argument(
+            help="The name of the model and a specific to download, specified as <model-name>:<tag>, e.g., llama3.1:8b. If no tag is specified, 'latest' will be assumed.",
+        ),
     ],
-    tag: Annotated[
-        str, typer.Argument(help="The tag of the model to download, e.g., latest")
-    ] = "latest",
 ):
     """Downloads a specific Ollama model with the given tag."""
+    model, tag = model_tag.split(":") if ":" in model_tag else (model_tag, "latest")
     model_downloader.download_model(
         model=model,
         tag=tag,
