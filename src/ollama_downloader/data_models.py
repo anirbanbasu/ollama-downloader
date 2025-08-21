@@ -16,7 +16,7 @@ class OllamaServer(BaseModel):
     )
 
 
-class OllamaStorage(BaseModel):
+class OllamaLibrary(BaseModel):
     models_path: str = Field(
         default="~/.ollama/models",
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
@@ -48,9 +48,9 @@ class AppSettings(BaseModel):
         default=OllamaServer(),
         description="Settings for the Ollama server connection.",
     )
-    ollama_storage: OllamaStorage = Field(
-        default=OllamaStorage(),
-        description="Settings for the Ollama model storage in the filesystem.",
+    ollama_library: OllamaLibrary = Field(
+        default=OllamaLibrary(),
+        description="Settings for accessing the Ollama library and storing locally.",
     )
 
     def read_settings(self) -> bool:

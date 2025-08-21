@@ -71,7 +71,7 @@ class OllamaModelDownloader:
         """
         logger.debug(f"Constructing manifest URL for {model}:{tag}")
         return (
-            f"{self.settings.ollama_storage.registry_base_url}{model}/manifests/{tag}"
+            f"{self.settings.ollama_library.registry_base_url}{model}/manifests/{tag}"
         )
 
     def _get_blob_url(self, model: str, digest: str) -> str:
@@ -86,7 +86,7 @@ class OllamaModelDownloader:
             str: The URL for the BLOB.
         """
         logger.debug(f"Constructing BLOB URL for {model} with digest {digest}")
-        return f"{self.settings.ollama_storage.registry_base_url}{model}/blobs/{digest.replace(':', '-')}"
+        return f"{self.settings.ollama_library.registry_base_url}{model}/blobs/{digest.replace(':', '-')}"
 
     def _fetch_manifest(self, model: str, tag: str) -> str:
         """
@@ -102,8 +102,8 @@ class OllamaModelDownloader:
         url = self._get_manifest_url(model=model, tag=tag)
         logger.info(f"Downloading manifest for [bold cyan]{model}:{tag}[/bold cyan]")
         with get_httpx_client(
-            self.settings.ollama_storage.verify_ssl,
-            self.settings.ollama_storage.timeout,
+            self.settings.ollama_library.verify_ssl,
+            self.settings.ollama_library.timeout,
         ) as http_client:
             response = http_client.get(url)
             response.raise_for_status()
@@ -126,8 +126,8 @@ class OllamaModelDownloader:
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             self.unnecessary_files.add(temp_file.name)
             with get_httpx_client(
-                self.settings.ollama_storage.verify_ssl,
-                self.settings.ollama_storage.timeout,
+                self.settings.ollama_library.verify_ssl,
+                self.settings.ollama_library.timeout,
             ).stream("GET", url) as response:
                 response.raise_for_status()
                 total = int(response.headers["Content-Length"])
@@ -168,13 +168,13 @@ class OllamaModelDownloader:
             str: The path to the saved manifest file.
         """
         ollama_registry_host = urlparse(
-            self.settings.ollama_storage.registry_base_url
+            self.settings.ollama_library.registry_base_url
         ).hostname
         manifests_toplevel_dir = os.path.join(
             (
-                os.path.expanduser(self.settings.ollama_storage.models_path)
-                if self.settings.ollama_storage.models_path.startswith("~")
-                else self.settings.ollama_storage.models_path
+                os.path.expanduser(self.settings.ollama_library.models_path)
+                if self.settings.ollama_library.models_path.startswith("~")
+                else self.settings.ollama_library.models_path
             ),
             "manifests",
         )
@@ -194,8 +194,8 @@ class OllamaModelDownloader:
         with open(target_file, "w") as f:
             f.write(data)
             logger.info(f"Saved manifest to {target_file}")
-        if self.settings.ollama_storage.user_group:
-            user, group = self.settings.ollama_storage.user_group
+        if self.settings.ollama_library.user_group:
+            user, group = self.settings.ollama_library.user_group
             shutil.chown(target_file, user, group)
             # The directory ownership must also be changed because it may have been created by a different user, most likely a sudoer
             # TODO: Is this necessary or can the ownership change to the top-level directory cascade down?
@@ -231,9 +231,9 @@ class OllamaModelDownloader:
             return False, None
         blobs_dir = os.path.join(
             (
-                os.path.expanduser(self.settings.ollama_storage.models_path)
-                if self.settings.ollama_storage.models_path.startswith("~")
-                else self.settings.ollama_storage.models_path
+                os.path.expanduser(self.settings.ollama_library.models_path)
+                if self.settings.ollama_library.models_path.startswith("~")
+                else self.settings.ollama_library.models_path
             ),
             "blobs",
         )
@@ -247,8 +247,8 @@ class OllamaModelDownloader:
         target_file = os.path.join(blobs_dir, named_digest.replace(":", "-"))
         shutil.move(source, target_file)
         logger.info(f"Moved {source} to {target_file}")
-        if self.settings.ollama_storage.user_group:
-            user, group = self.settings.ollama_storage.user_group
+        if self.settings.ollama_library.user_group:
+            user, group = self.settings.ollama_library.user_group
             shutil.chown(target_file, user, group)
             shutil.chown(blobs_dir, user, group)
             # Set permissions to rw-r-----
