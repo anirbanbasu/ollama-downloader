@@ -200,7 +200,7 @@ The following screencast shows the process of downloading the model `all-minilm:
 
 _Notice that there are warnings that SSL verification has been disabled. This is intentional to illustrate the process of downloading through a HTTPS proxy (picked up from the `HTTPS_PROXY` environment variable) that has self-signed certificates_.
 
-![demo-model-download](https://raw.githubusercontent.com/anirbanbasu/frankfurtermcp/master/screencasts/demo_model_download.gif "model-download demo")
+![demo-model-download](https://raw.githubusercontent.com/anirbanbasu/ollama-downloader/master/screencasts/demo_model_download.gif "model-download demo")
 
 ## Testing and coverage
 
