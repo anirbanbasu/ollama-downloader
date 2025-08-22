@@ -196,6 +196,12 @@ Usage: od model-download [OPTIONS] MODEL_TAG
 ╰──────────────────────────────────────────────────────────────╯
 ```
 
+The following screencast shows the process of downloading the model `all-minilm:latest` on a machine running Ubuntu 22.04.5 LTS (GNU/Linux 6.8.0-60-generic x86_64) with Ollama installed as a service. Hence, the command `sudo .venv/bin/od model-download all-minilm` was used.
+
+_Notice that there are warnings that SSL verification has been disabled. This is intentional to illustrate the process of downloading through a HTTPS proxy (picked up from the `HTTPS_PROXY` environment variable) that has self-signed certificates_.
+
+![demo-model-download](https://raw.githubusercontent.com/anirbanbasu/frankfurtermcp/master/screencasts/demo_model_download.gif "model-download demo")
+
 ## Testing and coverage
 
 To be added.
