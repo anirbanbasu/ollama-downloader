@@ -1,4 +1,6 @@
 from typer.testing import CliRunner
+import subprocess
+import sys
 
 from ollama_downloader.cli import app
 from ollama_downloader.data_models import AppSettings
@@ -34,3 +36,17 @@ def test_list_tags():
     # Expect at least two known tags to be listed for the gpt-oss model
     assert ":latest" in result.output.lower()
     assert ":20b" in result.output.lower()
+
+
+def test_model_download():
+    # Let's try downloading the smallest possible model to stop the test from taking too long
+    model_tag = "all-minilm:22m"
+    # Typer's CliRunner is unable to handle to cleanup of temp directories properly.
+    # Hence, we will invoke the CLI via subprocess instead.
+    result = subprocess.run(
+        [sys.executable, "-m", "ollama_downloader.cli", "model-download", model_tag],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert f"{model_tag} successfully downloaded and saved" in result.stdout

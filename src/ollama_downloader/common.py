@@ -16,7 +16,6 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
     ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 logging.basicConfig(
-    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
     format="%(message)s",
     datefmt="[%X]",
     handlers=[RichHandler(rich_tracebacks=False, markup=True)],
@@ -24,6 +23,7 @@ logging.basicConfig(
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
+logger.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
 
 
 def get_httpx_client(verify: bool, timeout: float) -> httpx.Client:

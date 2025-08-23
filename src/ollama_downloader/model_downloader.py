@@ -36,6 +36,7 @@ class OllamaModelDownloader:
         self.unnecessary_files: Set[str] = set()
         self.models_tags: dict[str, list] = {}
         self.library_models: list[str] = []
+        print(logger)
 
     def _cleanup_unnecessary_files(self):
         """

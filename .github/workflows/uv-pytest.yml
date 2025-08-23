@@ -28,4 +28,5 @@ jobs:
         run: uv sync --all-groups
 
       - name: Run tests using pytest
-        run: uv run --group test pytest tests/
+      # Exclude the test_model_download test as it requires Ollama
+        run: uv run --group test pytest -k "not test_model_download" tests/
