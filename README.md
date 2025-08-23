@@ -1,4 +1,4 @@
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3120/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3120/) [![pytest](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml/badge.svg)](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml)
 
 # Ollama (model) downloader
 
@@ -19,7 +19,11 @@ People have been facing this for a variety of unrelated reasons and have found s
 _Hence, this tool – an automation of that manual process_!
 
 ### Yet another downloader?
-Yes, and there exists [Ollama-model-downloader](https://github.com/raffaeleguidi/Ollama-model-downloader).
+Yes, and there exist others, possibly with different purposes.
+ - [Ollama-model-downloader](https://github.com/raffaeleguidi/Ollama-model-downloader)
+ - [ollama-dl](https://github.com/akx/ollama-dl)
+ - [ollama-direct-downloader](https://github.com/Gholamrezadar/ollama-direct-downloader)
+ - [ollama-gguf-downloader](https://github.com/olamide226/ollama-gguf-downloader)
 
 ## Installation
 
@@ -204,7 +208,18 @@ _Notice that there are warnings that SSL verification has been disabled. This is
 
 ## Testing and coverage
 
-To be added.
+To run the provided set of tests using `pytest`, execute the following in _WD_. Append the flag `--capture=tee-sys` to the following command to see the console output during the tests.
+
+```bash
+uv run --group test pytest tests/
+```
+
+To get a report on coverage while invoking the tests, run the following two commands.
+
+```bash
+uv run --group test coverage run -m pytest tests/
+uv run coverage report
+```
 
 ## Contributing
 

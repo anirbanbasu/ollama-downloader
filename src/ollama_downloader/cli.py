@@ -16,7 +16,7 @@ app = typer.Typer(
     help="A command-line interface for the Ollama downloader.",
 )
 
-model_downloader: OllamaModelDownloader = None
+model_downloader: OllamaModelDownloader = OllamaModelDownloader()
 
 
 @app.command()
@@ -43,7 +43,6 @@ def list_tags(
     update: Annotated[
         bool,
         typer.Option(
-            is_flag=True,
             help="Force update the model list and its tags before listing.",
         ),
     ] = False,
@@ -88,9 +87,6 @@ def main():
     signal.signal(signal.SIGTERM, interrupt_handler)
     # All good so far, let's start the Typer app
     try:
-        global model_downloader
-        # Initialize the model downloader with the application settings
-        model_downloader = OllamaModelDownloader()
         app()
     except Exception as e:
         logger.error(f"[bold red]{e}[/bold red]")
