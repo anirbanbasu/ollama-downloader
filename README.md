@@ -243,7 +243,7 @@ Usage: od hf-model-download [OPTIONS] ORG_REPO_MODEL
 
 ## Testing and coverage
 
-To run the provided set of tests using `pytest`, execute the following in _WD_. Append the flag `--capture=tee-sys` to the following command to see the console output during the tests.
+To run the provided set of tests using `pytest`, execute the following in _WD_. Append the flag `--capture=tee-sys` to the following command to see the console output during the tests. Note that the model download tests run as sub-processes. Their outputs will not be visible by using this flag.
 
 ```bash
 uv run --group test pytest tests/
