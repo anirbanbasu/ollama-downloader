@@ -11,7 +11,7 @@ on:
 permissions:
   contents: read
 
-name: pytest
+name: pytest-self-hosted
 
 jobs:
   uv-pytest:

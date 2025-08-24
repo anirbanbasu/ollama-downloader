@@ -55,6 +55,7 @@ def get_httpx_client(verify: bool, timeout: float) -> httpx.Client:
         trust_env=True,
         http2=True,
         timeout=timeout,
+        # Set a custom User-Agent header
         headers={"User-Agent": user_agent},
     )
     return client
