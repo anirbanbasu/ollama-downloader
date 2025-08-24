@@ -228,18 +228,17 @@ Usage: od hf-model-download [OPTIONS] ORG_REPO_MODEL
  Downloads a specified Hugging Face model.
 
 
-╭─ Arguments ──────────────────────────────────────────────────╮
-│ *    org_repo_model      TEXT  The name of the specific      │
-│                                Hugging Face model to         │
-│                                download, specified as        │
-│                                <org>/<repo>:<model>, e.g.,   │
-│                                bartowski/Llama-3.2-1B-Instr… │
-│                                [default: None]               │
-│                                [required]                    │
-╰──────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                  │
-╰──────────────────────────────────────────────────────────────╯
+╭─ Arguments ────────────────────────────────────────────────────────────────────╮
+│ *    org_repo_model      TEXT  The name of the specific Hugging Face model to  │
+│                                download, specified as <org>/<repo>:<model>,    │
+│                                e.g.,                                           │
+│                                bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.    │
+│                                [default: None]                                 │
+│                                [required]                                      │
+╰────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                    │
+╰────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Testing and coverage
