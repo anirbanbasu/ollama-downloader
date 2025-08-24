@@ -1,6 +1,7 @@
 import os
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, DirectoryPath
 from typing import ClassVar, Optional, Tuple
+from pathlib import Path
 
 from ollama_downloader.common import logger
 
@@ -21,8 +22,8 @@ class OllamaServer(BaseModel):
 
 
 class OllamaLibrary(BaseModel):
-    models_path: str = Field(
-        default="~/.ollama/models",
+    models_path: DirectoryPath = Field(
+        default=Path("~/.ollama/models"),
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
     )
     models_tags_cache: str = Field(
