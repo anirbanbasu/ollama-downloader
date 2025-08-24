@@ -2,7 +2,7 @@
 
 # Ollama (library and Hugging Face) model downloader
 
-Rather evident from the name, this is a tool to help download models for [Ollama](https://ollama.com/) and [supported models from Hugging Face](https://huggingface.co/models?apps=ollama). However, doesn't Ollama already download models from its library using `ollama pull <model:tag>`?
+Rather evident from the name, this is a tool to help download models for [Ollama](https://ollama.com/) including [supported models from Hugging Face](https://huggingface.co/models?apps=ollama). However, doesn't Ollama already download models from its library using `ollama pull <model:tag>`?
 
 Yes, but wait, not so fast...!
 
