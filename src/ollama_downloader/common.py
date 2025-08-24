@@ -19,12 +19,12 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 logging.basicConfig(
     format="%(message)s",
     datefmt="[%X]",
-    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
     handlers=[RichHandler(rich_tracebacks=False, markup=True)],
 )
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
+logger.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
 
 UA_NAME_VER = "ollama-downloader/0.1.0"
 user_agent = f"{UA_NAME_VER} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
