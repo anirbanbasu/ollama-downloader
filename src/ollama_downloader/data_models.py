@@ -1,12 +1,12 @@
 import os
-from pydantic import BaseModel, Field
-from typing import ClassVar, Optional, Tuple
+from pydantic import BaseModel, Field, HttpUrl, AfterValidator
+from typing import ClassVar, Optional, Tuple, Annotated
 
 from ollama_downloader.common import logger
 
 
-class OllamaServer(BaseModel):
-    url: str = Field(
+class OllamaServer(BaseModel, validate_assignment=True):
+    url: Annotated[HttpUrl, AfterValidator(str)] = Field(
         default="http://localhost:11434",
         description="URL of the Ollama server.",
     )
