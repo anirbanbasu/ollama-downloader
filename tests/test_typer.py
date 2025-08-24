@@ -47,13 +47,14 @@ def test_model_download():
         [sys.executable, "-m", "ollama_downloader.cli", "model-download", model_tag],
         capture_output=True,
         text=True,
-        env={"LOG_LEVEL": "INFO", "COLUMNS": "200"},
+        # Widen the columns to avoid wrapping the output
+        env={"LOG_LEVEL": "INFO", "COLUMNS": "256"},
     )
-    with open("test_model_download.log", "w") as f:
-        f.write(result.stdout.rstrip("\n"))
-        f.write(result.stderr)
     assert result.returncode == 0
-    assert f"{model_tag} successfully downloaded and saved" in result.stdout
+    # Remove any trailing newlines for the comparison
+    assert f"{model_tag} successfully downloaded and saved" in result.stdout.rstrip(
+        "\n"
+    )
 
 
 def test_hf_model_download():
@@ -71,10 +72,12 @@ def test_hf_model_download():
         ],
         capture_output=True,
         text=True,
-        env={"LOG_LEVEL": "INFO", "COLUMNS": "200"},
+        # Widen the columns to avoid wrapping the output
+        env={"LOG_LEVEL": "INFO", "COLUMNS": "256"},
     )
-    with open("test_hf_model_download.log", "w") as f:
-        f.write(result.stdout.rstrip("\n"))
-        f.write(result.stderr)
     assert result.returncode == 0
-    assert f"{org_repo_model} successfully downloaded and saved" in result.stdout
+    # Remove any trailing newlines for the comparison
+    assert (
+        f"{org_repo_model} successfully downloaded and saved"
+        in result.stdout.rstrip("\n")
+    )

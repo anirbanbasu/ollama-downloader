@@ -22,6 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup Ollama
+        uses: ai-action/setup-ollama@v1
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
 
@@ -30,4 +33,4 @@ jobs:
 
       - name: Run tests using pytest
       # Disable model_download tests on non self-hosted runners for now.
-        run: uv run --group test pytest -k "not model_download" tests/
+        run: uv run --group test pytest tests/
