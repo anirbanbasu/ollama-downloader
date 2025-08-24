@@ -21,7 +21,7 @@ class OllamaServer(BaseModel):
     )
 
 
-class OllamaLibrary(BaseModel):
+class OllamaLibrary(BaseModel, validate_assignment=True):
     models_path: DirectoryPath = Field(
         default=Path("~/.ollama/models"),
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
