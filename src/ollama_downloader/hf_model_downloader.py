@@ -1,15 +1,14 @@
 import datetime
 import hashlib
-import json
 import os
 import shutil
 import tempfile
 from typing import List, Set, Tuple
-from urllib.parse import urlparse
 
 from ollama_downloader.data_models import AppSettings, ImageManifest
 from ollama_downloader.common import logger, get_httpx_client
-import lxml.html
+
+# import lxml.html
 from ollama import Client as OllamaClient
 
 from rich.progress import (
@@ -18,11 +17,14 @@ from rich.progress import (
     TextColumn,
     DownloadColumn,
     TransferSpeedColumn,
-    MofNCompleteColumn,
+    # MofNCompleteColumn,
 )
 
 
-class OllamaModelDownloader:
+class HuggingFaceModelDownloader:
+    HF_BASE_HOST = "hf.co"
+    HF_BASE_URL = f"https://{HF_BASE_HOST}/v2/"
+
     def __init__(self, settings: AppSettings | None = None):
         """
         Initialize the model downloader with application settings.
@@ -35,7 +37,6 @@ class OllamaModelDownloader:
             self.settings.save_settings()
         self.unnecessary_files: Set[str] = set()
         self.models_tags: dict[str, list] = {}
-        self.library_models: list[str] = []
 
     def _cleanup_unnecessary_files(self):
         """
@@ -64,49 +65,45 @@ class OllamaModelDownloader:
             except OSError as e:
                 logger.error(f"Failed to remove unnecessary directory {directory}: {e}")
 
-    def _get_manifest_url(self, model: str, tag: str) -> str:
+    def _get_manifest_url(self, org_repo_model: str) -> str:
         """
         Construct the URL for a model manifest based on its name and tag.
 
         Args:
-            model (str): The name of the model, e.g., llama3.1.
-            tag (str): The tag of the model, e.g., latest.
+            org_repo_model (str): The model identifier in the format "org/repo:model".
 
         Returns:
             str: The URL for the model manifest.
         """
-        logger.debug(f"Constructing manifest URL for {model}:{tag}")
-        return (
-            f"{self.settings.ollama_library.registry_base_url}{model}/manifests/{tag}"
-        )
+        logger.debug(f"Constructing manifest URL for {org_repo_model}")
+        return f"{HuggingFaceModelDownloader.HF_BASE_URL}{org_repo_model.replace(':', '/manifests/')}"
 
-    def _get_blob_url(self, model: str, digest: str) -> str:
+    def _get_blob_url(self, org_repo_model: str, digest: str) -> str:
         """
         Construct the URL for a BLOB based on its digest.
 
         Args:
-            model (str): The name of the model, e.g., llama3.1.
+            org_repo_model (str): The model identifier in the format "org/repo:model".
             digest (str): The digest of the BLOB prefixed with the digest algorithm followed by a colon character.
 
         Returns:
             str: The URL for the BLOB.
         """
-        logger.debug(f"Constructing BLOB URL for {model} with digest {digest}")
-        return f"{self.settings.ollama_library.registry_base_url}{model}/blobs/{digest.replace(':', '-')}"
+        logger.debug(f"Constructing BLOB URL for {org_repo_model} with digest {digest}")
+        return f"{HuggingFaceModelDownloader.HF_BASE_URL}{org_repo_model.split(':')[0]}/blobs/{digest}"
 
-    def _fetch_manifest(self, model: str, tag: str) -> str:
+    def _fetch_manifest(self, org_repo_model: str) -> str:
         """
         Fetch the manifest for a model from the Ollama registry.
 
         Args:
-            model (str): The name of the model, e.g., llama3.1.
-            tag (str): The tag of the model, e.g., latest.
+            org_repo_model (str): The model identifier in the format "org/repo:model".
 
         Returns:
             str: The JSON string of the model manifest.
         """
-        url = self._get_manifest_url(model=model, tag=tag)
-        logger.info(f"Downloading manifest for [bold cyan]{model}:{tag}[/bold cyan]")
+        url = self._get_manifest_url(org_repo_model=org_repo_model)
+        logger.info(f"Downloading manifest for [bold cyan]{org_repo_model}[/bold cyan]")
         with get_httpx_client(
             self.settings.ollama_library.verify_ssl,
             self.settings.ollama_library.timeout,
@@ -115,18 +112,18 @@ class OllamaModelDownloader:
             response.raise_for_status()
             return response.text
 
-    def _download_model_blob(self, model: str, named_digest: str) -> tuple:
+    def _download_model_blob(self, org_repo_model: str, named_digest: str) -> tuple:
         """
         Download a file given the digest and save it to the specified destination.
 
         Args:
-            model (str): The name of the model, e.g., llama3.1.
+            org_repo_model (str): The model identifier in the format "org/repo:model".
             named_digest (str): The digest of the BLOB prefixed with the digest algorithm followed by a colon character.
 
         Returns:
             tuple: A tuple containing the path to the downloaded file and its computed SHA256 digest.
         """
-        url = self._get_blob_url(model=model, digest=named_digest)
+        url = self._get_blob_url(org_repo_model=org_repo_model, digest=named_digest)
         # try:
         sha256_hash = hashlib.new("sha256")
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
@@ -163,23 +160,18 @@ class OllamaModelDownloader:
     def _save_manifest_to_destination(
         self,
         data: str,
-        model: str,
-        tag: str,
+        org_repo_model: str,
     ) -> str:
         """
         Copy a manifest data to destination.
 
         Args:
             data (str): The JSON string of the manifest.
-            model (str): The name of the model, e.g., llama3.1.
-            tag (str): The tag of the model, e.g., latest.
+            org_repo_model (str): The model identifier in the format "org/repo:model".
 
         Returns:
             str: The path to the saved manifest file.
         """
-        ollama_registry_host = urlparse(
-            self.settings.ollama_library.registry_base_url
-        ).hostname
         manifests_toplevel_dir = os.path.join(
             (
                 os.path.expanduser(self.settings.ollama_library.models_path)
@@ -188,11 +180,11 @@ class OllamaModelDownloader:
             ),
             "manifests",
         )
+        org_repo_model_splits = org_repo_model.split(":")
         manifests_dir = os.path.join(
             manifests_toplevel_dir,
-            ollama_registry_host,
-            "library",
-            model,
+            HuggingFaceModelDownloader.HF_BASE_HOST,
+            org_repo_model_splits[0],
         )
         if not os.path.exists(manifests_dir):
             logger.warning(
@@ -200,7 +192,7 @@ class OllamaModelDownloader:
             )
             os.makedirs(manifests_dir)
             self.unnecessary_files.add(manifests_dir)
-        target_file = os.path.join(manifests_dir, tag)
+        target_file = os.path.join(manifests_dir, org_repo_model_splits[1])
         with open(target_file, "w") as f:
             f.write(data)
             logger.info(f"Saved manifest to {target_file}")
@@ -216,34 +208,6 @@ class OllamaModelDownloader:
             )
         self.unnecessary_files.add(target_file)
         return target_file
-
-    def _save_models_tags_cache(
-        self,
-    ) -> None:
-        """
-        Save the models tags cache to a file.
-        """
-        if hasattr(self, "models_tags"):
-            with open(self.settings.ollama_library.models_tags_cache, "w") as f:
-                f.write(json.dumps(self.models_tags, indent=2))
-        else:
-            logger.warning("No models tags cache to save.")
-
-    def load_models_tags_cache(self) -> None:
-        """
-        Load the models tags cache from a file.
-        """
-        if os.path.exists(self.settings.ollama_library.models_tags_cache):
-            with open(self.settings.ollama_library.models_tags_cache, "r") as f:
-                self.models_tags = json.loads(f.read())
-            logger.info(
-                f"Loaded models tags cache from {self.settings.ollama_library.models_tags_cache}"
-            )
-            self.library_models = list(self.models_tags.keys())
-        else:
-            logger.warning(
-                f"No models tags cache found at {self.settings.ollama_library.models_tags_cache}"
-            )
 
     def _copy_blob_to_destination(
         self,
@@ -298,12 +262,17 @@ class OllamaModelDownloader:
         self.unnecessary_files.add(target_file)
         return True, target_file
 
-    def download_model(self, model: str, tag: str = "latest") -> None:
+    def download_model(self, org_repo_model: str) -> None:
         # Implementation of the model downloading logic
-        """Download a model from the Ollama server."""
+        """
+        Download a model from the Ollama server.
+
+        Args:
+            org_repo_model (str): The model identifier in the format "org/repo:model".
+        """
         # Validate the response as an ImageManifest but don't enforce strict validation
-        manifest_json = self._fetch_manifest(model=model, tag=tag)
-        logger.debug(f"Validating manifest for {model}:{tag}")
+        manifest_json = self._fetch_manifest(org_repo_model=org_repo_model)
+        logger.debug(f"Validating manifest for {org_repo_model}")
         manifest = ImageManifest.model_validate_json(manifest_json, strict=False)
         logger.info(
             f"Downloading model configuration [bold cyan]{manifest.config.digest}[/bold cyan]"
@@ -314,7 +283,7 @@ class OllamaModelDownloader:
         files_to_be_copied: List[Tuple[str, str, str]] = []
         # Download the model configuration BLOB
         file_model_config, digest_model_config = self._download_model_blob(
-            model=model,
+            org_repo_model=org_repo_model,
             named_digest=manifest.config.digest,
         )
         files_to_be_copied.append(
@@ -328,7 +297,7 @@ class OllamaModelDownloader:
                 f"Downloading [bold cyan]{layer.mediaType}[/bold cyan] layer [bold cyan]{layer.digest}[/bold cyan]"
             )
             file_layer, digest_layer = self._download_model_blob(
-                model=model,
+                org_repo_model=org_repo_model,
                 named_digest=layer.digest,
             )
             files_to_be_copied.append((file_layer, layer.digest, digest_layer))
@@ -344,8 +313,7 @@ class OllamaModelDownloader:
         # Finally, save the manifest to its appropriate destination
         self._save_manifest_to_destination(
             data=manifest_json,
-            model=model,
-            tag=tag,
+            org_repo_model=org_repo_model,
         )
         ts_approximate_manifest_save = datetime.datetime.now()
         # Finally check if it exists in the Ollama
@@ -359,9 +327,10 @@ class OllamaModelDownloader:
         )
         models_list = ollama_client.list()
         found_model = None
+        search_model = f"{HuggingFaceModelDownloader.HF_BASE_HOST}/{org_repo_model}"
         for model_info in models_list.models:
             if (
-                model_info.model == f"{model}:{tag}"
+                model_info.model == search_model
                 # TODO: Is this timestamp assumption right that the listing is completed within a minute of saving?
                 and abs(
                     model_info.modified_at.replace(tzinfo=None)
@@ -377,131 +346,7 @@ class OllamaModelDownloader:
             )
         else:
             raise RuntimeError(
-                f"Model {model}:{tag} could not be found in Ollama server after download."
+                f"Model {search_model} could not be found in Ollama server after download."
             )
         # If we reached here cleanly, remove all unnecessary file names but don't remove actual files.
         self.unnecessary_files.clear()
-
-    def update_models_list(self) -> list:
-        """
-        Update the list of models available in the Ollama library.
-
-        Returns:
-            list: A list of model names available in the Ollama library.
-        """
-        with get_httpx_client(
-            verify=self.settings.ollama_library.verify_ssl,
-            timeout=self.settings.ollama_library.timeout,
-        ) as client:
-            logger.debug(
-                f"Updating models list from Ollama library {self.settings.ollama_library.library_base_url}"
-            )
-            models_response = client.get(self.settings.ollama_library.library_base_url)
-            models_response.raise_for_status()
-            parsed_models_html = lxml.html.document_fromstring(models_response.text)
-            self.library_models = []
-            library_prefix = "/library/"
-            for _, attribute, link, _ in lxml.html.iterlinks(parsed_models_html):
-                if attribute == "href" and link.startswith(library_prefix):
-                    self.library_models.append(link.replace(library_prefix, ""))
-            logger.debug(
-                f"Found {len(self.library_models)} models in the Ollama library."
-            )
-            return self.library_models
-
-    def list_models_tags(
-        self, model: str | None = None, update: bool = False
-    ) -> dict[str, list]:
-        """
-        Update the tags for each model or a named model in the Ollama library.
-
-        Returns:
-            dict[str, list]: A dictionary where keys are model names and values are lists of tags.
-        """
-        self.load_models_tags_cache()
-        if not hasattr(self, "library_models") or update:
-            self.update_models_list()
-        with get_httpx_client(
-            verify=self.settings.ollama_library.verify_ssl,
-            timeout=self.settings.ollama_library.timeout,
-        ) as client:
-            if model is not None:
-                if model not in self.library_models:
-                    logger.error(f"Model {model} not found in the library models list.")
-                    return {}
-                else:
-                    if not hasattr(self, "models_tags") or update:
-                        logger.debug(
-                            f"Fetching tags for model {model} from the Ollama library."
-                        )
-                        tags_response = client.get(
-                            f"{self.settings.ollama_library.library_base_url}/{model}/tags"
-                        )
-                        tags_response.raise_for_status()
-                        logger.debug(f"Parsing tags for model {model}.")
-                        parsed_tags_html = lxml.html.document_fromstring(
-                            tags_response.text
-                        )
-                        library_prefix = "/library/"
-                        named_model_unique_tags: Set[str] = set()
-                        for _, attribute, link, _ in lxml.html.iterlinks(
-                            parsed_tags_html
-                        ):
-                            if attribute == "href" and link.startswith(
-                                f"{library_prefix}{model}:"
-                            ):
-                                if model not in self.models_tags:
-                                    self.models_tags[model] = []
-                                named_model_unique_tags.add(
-                                    link.replace(library_prefix, "")
-                                )
-                        self.models_tags[model] = list(named_model_unique_tags)
-                        logger.debug(f"Updating tags for model {model} in the cache.")
-                        self._save_models_tags_cache()
-                    return {model: self.models_tags.get(model, [])}
-            else:
-                if (
-                    not hasattr(self, "models_tags")
-                    or update
-                    or len(self.models_tags) == 0
-                ):
-                    # A full update has been requested
-                    model_counter = 0
-                    with Progress(
-                        TextColumn(
-                            text_format="[bold blue]{task.description}[/bold blue]"
-                        ),
-                        "[progress.percentage]{task.percentage:>3.0f}%",
-                        BarColumn(bar_width=None),
-                        MofNCompleteColumn(),
-                    ) as progress:
-                        tags_task = progress.add_task(
-                            "Updating models",
-                            total=len(self.library_models),
-                        )
-                        for m in self.library_models:
-                            tags_response = client.get(
-                                f"{self.settings.ollama_library.library_base_url}/{m}/tags"
-                            )
-                            tags_response.raise_for_status()
-                            parsed_tags_html = lxml.html.document_fromstring(
-                                tags_response.text
-                            )
-                            model_unique_tags: Set[str] = set()
-                            for _, attribute, link, _ in lxml.html.iterlinks(
-                                parsed_tags_html
-                            ):
-                                if attribute == "href" and link.startswith(
-                                    f"/library/{m}:"
-                                ):
-                                    if m not in self.models_tags:
-                                        self.models_tags[m] = []
-                                    model_unique_tags.add(link.replace("/library/", ""))
-                            self.models_tags[m] = list(model_unique_tags)
-                            model_counter += 1
-                            progress.update(tags_task, completed=model_counter)
-                    logger.info(
-                        f"Updated {len(self.models_tags)} models with tags from the Ollama library."
-                    )
-                    self._save_models_tags_cache()
-                return self.models_tags

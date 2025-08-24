@@ -50,3 +50,23 @@ def test_model_download():
     )
     assert result.returncode == 0
     assert f"{model_tag} successfully downloaded and saved" in result.stdout
+
+
+def test_hf_model_download():
+    # Let's try downloading the smallest possible model to stop the test from taking too long
+    org_repo_model = "unsloth/gemma-3-270m-it-GGUF:Q4_K_M"
+    # Typer's CliRunner is unable to handle to cleanup of temp directories properly.
+    # Hence, we will invoke the CLI via subprocess instead.
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ollama_downloader.cli",
+            "hf-model-download",
+            org_repo_model,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert f"{org_repo_model} successfully downloaded and saved" in result.stdout

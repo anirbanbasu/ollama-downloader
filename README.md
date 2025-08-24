@@ -18,6 +18,8 @@ People have been facing this for a variety of unrelated reasons and have found s
 
 _Hence, this tool – an automation of that manual process_!
 
+As a side-note, this Ollama model downloader can also **download supported models from Huggingface**!
+
 ### Yet another downloader?
 Yes, and there exist others, possibly with different purposes.
  - [Ollama-model-downloader](https://github.com/raffaeleguidi/Ollama-model-downloader)
@@ -205,6 +207,40 @@ The following screencast shows the process of downloading the model `all-minilm:
 _Notice that there are warnings that SSL verification has been disabled. This is intentional to illustrate the process of downloading through a HTTPS proxy (picked up from the `HTTPS_PROXY` environment variable) that has self-signed certificates_.
 
 ![demo-model-download](https://raw.githubusercontent.com/anirbanbasu/ollama-downloader/master/screencasts/demo_model_download.gif "model-download demo")
+
+### `hf-model-download`
+
+The `hfmodel-download` downloads the specified model from Huggingface.
+
+During the process of downloading, the following are performed.
+
+1. Validation of the manifest for the specified model for the specified repository and organisation. _Note that not all Huggingface models have the necessary files that can be downloaded into Ollama automatically._
+2. Validation of the SHA256 hash of each downloaded BLOB.
+3. Post-download verification with the Ollama server specified by `ollama_server.url` in the configuration that the downloaded model is available.
+
+As an example, run `uv run od model-download unsloth/gemma-3-270m-it-GGUF:Q4_K_M` to download the `gemma-3-270m-it-GGUF:Q4_K_M` model from `unsloth`, the details of which can be found at https://huggingface.co/unsloth/gemma-3-270m-it-GGUF.
+
+Running `uv run od hf-model-download --help` displays the following.
+
+```bash
+Usage: od hf-model-download [OPTIONS] ORG_REPO_MODEL
+
+ Downloads a specified HuggingFace model.
+
+
+╭─ Arguments ──────────────────────────────────────────────────╮
+│ *    org_repo_model      TEXT  The name of the specific      │
+│                                Huggingface model to          │
+│                                download, specified as        │
+│                                <org>/<repo>:<model>, e.g.,   │
+│                                bartowski/Llama-3.2-1B-Instr… │
+│                                [default: None]               │
+│                                [required]                    │
+╰──────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                  │
+╰──────────────────────────────────────────────────────────────╯
+```
 
 ## Testing and coverage
 
