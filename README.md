@@ -1,8 +1,8 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3120/) [![pytest](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml/badge.svg)](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml)
 
-# Ollama (model) downloader
+# Ollama (library and Hugging Face) model downloader
 
-Rather evident from the name, this is a tool to help download models for [Ollama](https://ollama.com/). However, doesn't Ollama already download models from its library using `ollama pull <model:tag>`?
+Rather evident from the name, this is a tool to help download models for [Ollama](https://ollama.com/) and [supported models from Hugging Face](https://huggingface.co/models?apps=ollama). However, doesn't Ollama already download models from its library using `ollama pull <model:tag>`?
 
 Yes, but wait, not so fast...!
 
@@ -18,7 +18,7 @@ People have been facing this for a variety of unrelated reasons and have found s
 
 _Hence, this tool – an automation of that manual process_!
 
-As a side-note, this Ollama model downloader can also **download supported models from Huggingface**!
+Do note that, as of August 24, 2025, this Ollama downloader can also _download supported models from Hugging Face_!
 
 ### Yet another downloader?
 Yes, and there exist others, possibly with different purposes.
@@ -210,11 +210,11 @@ _Notice that there are warnings that SSL verification has been disabled. This is
 
 ### `hf-model-download`
 
-The `hfmodel-download` downloads the specified model from Huggingface.
+The `hfmodel-download` downloads the specified model from Hugging Face.
 
 During the process of downloading, the following are performed.
 
-1. Validation of the manifest for the specified model for the specified repository and organisation. _Note that not all Huggingface models have the necessary files that can be downloaded into Ollama automatically._
+1. Validation of the manifest for the specified model for the specified repository and organisation. _Note that not all Hugging Face models have the necessary files that can be downloaded into Ollama automatically._
 2. Validation of the SHA256 hash of each downloaded BLOB.
 3. Post-download verification with the Ollama server specified by `ollama_server.url` in the configuration that the downloaded model is available.
 
@@ -225,12 +225,12 @@ Running `uv run od hf-model-download --help` displays the following.
 ```bash
 Usage: od hf-model-download [OPTIONS] ORG_REPO_MODEL
 
- Downloads a specified HuggingFace model.
+ Downloads a specified Hugging Face model.
 
 
 ╭─ Arguments ──────────────────────────────────────────────────╮
 │ *    org_repo_model      TEXT  The name of the specific      │
-│                                Huggingface model to          │
+│                                Hugging Face model to         │
 │                                download, specified as        │
 │                                <org>/<repo>:<model>, e.g.,   │
 │                                bartowski/Llama-3.2-1B-Instr… │

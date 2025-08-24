@@ -79,11 +79,11 @@ def hf_model_download(
     org_repo_model: Annotated[
         str,
         typer.Argument(
-            help="The name of the specific Huggingface model to download, specified as <org>/<repo>:<model>, e.g., bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.",
+            help="The name of the specific Hugging Face model to download, specified as <org>/<repo>:<model>, e.g., bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.",
         ),
     ],
 ):
-    """Downloads a specified HuggingFace model."""
+    """Downloads a specified Hugging Face model."""
     hf_model_downloader.download_model(org_repo_model=org_repo_model)
 
 
