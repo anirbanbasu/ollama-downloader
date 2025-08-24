@@ -38,4 +38,4 @@ jobs:
         run: uv sync --all-groups
 
       - name: Run tests using pytest
-        run: LOG_LEVEL=INFO uv run --group test pytest tests/
+        run: uv run --group test pytest tests/

@@ -47,6 +47,7 @@ def test_model_download():
         [sys.executable, "-m", "ollama_downloader.cli", "model-download", model_tag],
         capture_output=True,
         text=True,
+        env={"LOG_LEVEL": "INFO"},
     )
     assert result.returncode == 0
     assert f"{model_tag} successfully downloaded and saved" in result.stdout
@@ -67,6 +68,7 @@ def test_hf_model_download():
         ],
         capture_output=True,
         text=True,
+        env={"LOG_LEVEL": "INFO"},
     )
     assert result.returncode == 0
     assert f"{org_repo_model} successfully downloaded and saved" in result.stdout
