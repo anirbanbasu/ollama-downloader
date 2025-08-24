@@ -44,7 +44,7 @@ repos:
     hooks:
     - id: pytest
       name: pytest using uv
-      entry: uv run --group test pytest -k "not test_model_download" tests/
+      entry: uv run --group test pytest -k "not model_download" tests/
       language: system
       types: [python]
       pass_filenames: false

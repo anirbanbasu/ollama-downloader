@@ -29,4 +29,4 @@ jobs:
 
       - name: Run tests using pytest
       # Exclude the test_model_download test as it requires Ollama
-        run: uv run --group test pytest -k "not test_model_download" tests/
+        run: uv run --group test pytest -k "not model_download" tests/

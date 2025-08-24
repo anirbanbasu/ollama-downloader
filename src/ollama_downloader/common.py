@@ -4,6 +4,8 @@ import ssl
 
 import certifi
 import httpx
+from importlib import metadata
+import platform
 
 from rich.logging import RichHandler
 
@@ -18,12 +20,16 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
 logging.basicConfig(
     format="%(message)s",
     datefmt="[%X]",
+    level=os.environ.get("LOG_LEVEL", "INFO").upper(),
     handlers=[RichHandler(rich_tracebacks=False, markup=True)],
 )
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
-logger.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
+
+PACKAGE_NAME = "ollama-downloader"
+package_metadata = metadata.metadata(PACKAGE_NAME)
+user_agent = f"{package_metadata['Name']}/{package_metadata['Version']} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
 
 
 def get_httpx_client(verify: bool, timeout: float) -> httpx.Client:
@@ -51,5 +57,6 @@ def get_httpx_client(verify: bool, timeout: float) -> httpx.Client:
         trust_env=True,
         http2=True,
         timeout=timeout,
+        headers={"User-Agent": user_agent},
     )
     return client

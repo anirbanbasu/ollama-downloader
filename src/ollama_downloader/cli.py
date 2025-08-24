@@ -8,6 +8,7 @@ from rich import print_json as printj
 
 from ollama_downloader.common import logger
 from ollama_downloader.model_downloader import OllamaModelDownloader
+from ollama_downloader.hf_model_downloader import HuggingFaceModelDownloader
 
 # Initialize the Typer application
 app = typer.Typer(
@@ -17,6 +18,7 @@ app = typer.Typer(
 )
 
 model_downloader: OllamaModelDownloader = OllamaModelDownloader()
+hf_model_downloader: HuggingFaceModelDownloader = HuggingFaceModelDownloader()
 
 
 @app.command()
@@ -72,6 +74,19 @@ def model_download(
     )
 
 
+@app.command()
+def hf_model_download(
+    org_repo_model: Annotated[
+        str,
+        typer.Argument(
+            help="The name of the specific Huggingface model to download, specified as <org>/<repo>:<model>, e.g., bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.",
+        ),
+    ],
+):
+    """Downloads a specified HuggingFace model."""
+    hf_model_downloader.download_model(org_repo_model=org_repo_model)
+
+
 def main():
     """Main entry point for the CLI application."""
 
@@ -80,6 +95,8 @@ def main():
         # Add your cleanup logic here, e.g., closing files, releasing resources
         if model_downloader:
             model_downloader._cleanup_unnecessary_files()
+        if hf_model_downloader:
+            hf_model_downloader._cleanup_unnecessary_files()
         # Exit the application gracefully
         sys.exit(0)
 
@@ -95,6 +112,8 @@ def main():
         if model_downloader:
             # Ensure we clean up temporary files
             model_downloader._cleanup_unnecessary_files()
+        if hf_model_downloader:
+            hf_model_downloader._cleanup_unnecessary_files()
 
 
 if __name__ == "__main__":
