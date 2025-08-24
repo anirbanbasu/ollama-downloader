@@ -49,6 +49,9 @@ def test_model_download():
         text=True,
         env={"LOG_LEVEL": "INFO"},
     )
+    with open("test_model_download.log", "w") as f:
+        f.write(result.stdout)
+        f.write(result.stderr)
     assert result.returncode == 0
     assert f"{model_tag} successfully downloaded and saved" in result.stdout
 
@@ -70,5 +73,8 @@ def test_hf_model_download():
         text=True,
         env={"LOG_LEVEL": "INFO"},
     )
+    with open("test_hf_model_download.log", "w") as f:
+        f.write(result.stdout)
+        f.write(result.stderr)
     assert result.returncode == 0
     assert f"{org_repo_model} successfully downloaded and saved" in result.stdout
