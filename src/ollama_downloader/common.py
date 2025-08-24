@@ -4,7 +4,6 @@ import ssl
 
 import certifi
 import httpx
-from importlib import metadata
 import platform
 
 from rich.logging import RichHandler
@@ -27,9 +26,8 @@ logging.basicConfig(
 # Initialize the logger
 logger = logging.getLogger(__name__)
 
-PACKAGE_NAME = "ollama-downloader"
-package_metadata = metadata.metadata(PACKAGE_NAME)
-user_agent = f"{package_metadata['Name']}/{package_metadata['Version']} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
+UA_NAME_VER = "ollama-downloader/0.1.0"
+user_agent = f"{UA_NAME_VER} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
 
 
 def get_httpx_client(verify: bool, timeout: float) -> httpx.Client:
