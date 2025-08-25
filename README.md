@@ -41,6 +41,10 @@ Yes, and there exist others, possibly with different purposes.
 
 The directory where you clone this repository will be referred to as the _working directory_ or _WD_ hereinafter.
 
+### Using `pip`
+Although the rest of this README details the installation and usage of this downloader tool using the `uv` package manager, you can also use `pip` to install it from PyPI in a virtual environment of your choice by running `pip install ollama-downloader`. Thereafter, the scripts `od` and `ollama-downloader` will be available to you in that virtual environment.
+
+### Using `uv` (preferred)
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/). To install the project with its minimal dependencies in a virtual environment, run the following in the _WD_. To install all non-essential dependencies (_which are required for developing and testing_), replace the `--no-dev` with the `--all-groups` flag in the following command.
 
 ```bash
@@ -90,7 +94,7 @@ There are two main configuration groups: `ollama_server` and `ollama_library`. T
  - The `user_group` is a specification of the _user_ and the _group_ (as a tuple, e.g., `"user_group": ["user", "group"]`) that owns the path specified by `models_path`. If, for instance, your local Ollama is a service and its model path is `/usr/share/ollama/.ollama/models` then, in order to write to that path, you must run this downloader as _root_. However, the ownership of file objects in that path must be assigned to the user _ollama_ and group _ollama_. If your model path is on a writable network share then you most likely need not specify the user and group.
 
 ## Usage
-The preferred way to run this downloader is using the `od` script, such as `uv run od --help`.
+The preferred way to run this downloader is using the `od` script, such as `uv run od --help`, or `od --help`, if you installed the downloader using `pip`.
 
 However, if you need to run it with superuser rights (i.e., using `sudo`) for model download then you should install the script in the `uv` created virtual environment by running `uv pip install -e .` and then you can invoke it as `sudo .venv/bin/od --help`.
 
