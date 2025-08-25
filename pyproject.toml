@@ -1,11 +1,24 @@
 [project]
 name = "ollama-downloader"
 version = "0.1.0"
-description = "A model downloader for Ollama, for now."
+description = "A library and Hugging Face model downloader for Ollama."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+keywords = ["downloader", "tool", "models", "web-scraper", "huggingface", "huggingface-models", "ollama", "ollama-downloader", "ollama-model", "ollama-library"]
 authors = [
     { name = "Anirban Basu", email = "anirbanbasu@users.noreply.github.com" },
     { name = "Jairo Lopez", email = "nacarino@users.noreply.github.com" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Utilities",
 ]
 requires-python = ">=3.12"
 dependencies = [
@@ -17,6 +30,12 @@ dependencies = [
 
 [project.scripts]
 od = "ollama_downloader.cli:main"
+ollama-downloader = "ollama_downloader.cli:main"
+
+[project.urls]
+Repository = "https://github.com/anirbanbasu/ollama-downloader"
+Issues = "https://github.com/anirbanbasu/ollama-downloader/issues"
+Download = "https://pypi.org/project/ollama-downloader/"
 
 [build-system]
 requires = ["hatchling"]
@@ -26,7 +45,6 @@ build-backend = "hatchling.build"
 dev = [
     "icecream>=2.1.7",
     "pre-commit>=4.3.0",
-    "pyinstaller>=6.15.0",
 ]
 test = [
     "coverage>=7.10.4",
