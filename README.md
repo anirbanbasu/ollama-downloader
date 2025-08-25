@@ -10,7 +10,7 @@ Yes, but wait, not so fast...!
 
 While `ollama pull <model:tag>` certainly works, not always will you get lucky. This is a documented problem, see [issue 941](https://github.com/ollama/ollama/issues/941). The crux of the problem is that Ollama fails to pull a model from its library spitting out an error message as follows.
 
-> Error: digest mismatch, file must be downloaded again: want sha256:1a640cd4d69a5260bcc807a531f82ddb3890ebf49bc2a323e60a9290547135c1, got sha256:5eef5d8ec5ce977b74f91524c0002f9a7adeb61606cdbdad6460e25d58d0f454
+> `Error: digest mismatch, file must be downloaded again: want sha256:1a640cd4d69a5260bcc807a531f82ddb3890ebf49bc2a323e60a9290547135c1, got sha256:5eef5d8ec5ce977b74f91524c0002f9a7adeb61606cdbdad6460e25d58d0f454`
 
 People have been facing this for a variety of unrelated reasons and have found specific solutions that perhaps work for only when those specific reasons exist.
 
@@ -19,6 +19,16 @@ People have been facing this for a variety of unrelated reasons and have found s
 _Hence, this tool – an automation of that manual process_!
 
 Do note that, as of August 24, 2025, this Ollama downloader can also _download supported models from Hugging Face_!
+
+### Apart from `ollama pull`
+
+Ollama's issues with the `ollama pull` command can also implicitly bite you when using `ollama create`.
+
+As shown in the official [example of customising a prompt using a Modelfile](https://github.com/ollama/ollama?tab=readme-ov-file#customize-a-prompt), if you omit the step `ollama pull llama3.2`, then Ollama will automatically pull that model when you run `ollama create mario -f ./Modelfile`. Thus, if Ollama had issues with pulling that model, then those issues will hinder the custom model creation.
+
+Likewise, a more obvious command that will encounter the same issues as `ollama pull` is `ollama run`, which implicitly pulls the model if it does not exist.
+
+Thus, the safer route is to pull the model, in advance, using this downloader so that Ollama does not try to pull it implicitly (and fail at it).
 
 ### Yet another downloader?
 Yes, and there exist others, possibly with different purposes.
@@ -92,17 +102,16 @@ The `od` script provides the following commands. All its commands can be listed 
  A command-line interface for the Ollama downloader.
 
 
-╭─ Options ────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                  │
-╰──────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────╮
-│ show-config      Shows the application configuration as      │
-│                  JSON.                                       │
-│ list-models      Lists all available models.                 │
-│ list-tags        Lists all tags for a specific model.        │
-│ model-download   Downloads a specific Ollama model with the  │
-│                  given tag.                                  │
-╰──────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                     │
+╰─────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────╮
+│ show-config         Shows the application configuration as JSON.                │
+│ list-models         Lists all available models in the Ollama library.           │
+│ list-tags           Lists all tags for a specific model.                        │
+│ model-download      Downloads a specific Ollama model with the given tag.       │
+│ hf-model-download   Downloads a specified Hugging Face model.                   │
+╰─────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 You can also use `--help` on each command to see command-specific help.
