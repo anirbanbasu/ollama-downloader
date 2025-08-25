@@ -179,7 +179,7 @@ class HuggingFaceModelDownloader:
         manifests_toplevel_dir = os.path.join(
             (
                 os.path.expanduser(self.settings.ollama_library.models_path)
-                if self.settings.ollama_library.models_path.startswith("~")
+                if self.settings.ollama_library.models_path.name.startswith("~")
                 else self.settings.ollama_library.models_path
             ),
             "manifests",
@@ -238,7 +238,7 @@ class HuggingFaceModelDownloader:
         blobs_dir = os.path.join(
             (
                 os.path.expanduser(self.settings.ollama_library.models_path)
-                if self.settings.ollama_library.models_path.startswith("~")
+                if self.settings.ollama_library.models_path.name.startswith("~")
                 else self.settings.ollama_library.models_path
             ),
             "blobs",
