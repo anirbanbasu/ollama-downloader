@@ -1,12 +1,4 @@
-on:
-  push:
-    branches: [master]
-    paths:
-      - "**.py"
-      - "pyproject.toml"
-      - "uv.lock"
-  pull_request:
-    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+on: workflow_dispatch
 
 permissions:
   contents: read
@@ -24,7 +16,7 @@ jobs:
       - name: Setup Ollama
         uses: ai-action/setup-ollama@v1
 
-      - name: Verify Ollama is running
+      - name: Verify Ollama is running and list available models
         run: ollama list
       - name: Other diagnostic info
         run: |
