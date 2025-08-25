@@ -1,8 +1,8 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3120/) [![pytest](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml/badge.svg)](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml)
 
-# Ollama (model) downloader
+# Ollama (library and Hugging Face) model downloader
 
-Rather evident from the name, this is a tool to help download models for [Ollama](https://ollama.com/). However, doesn't Ollama already download models from its library using `ollama pull <model:tag>`?
+Rather evident from the name, this is a tool to help download models for [Ollama](https://ollama.com/) including [supported models from Hugging Face](https://huggingface.co/models?apps=ollama). However, doesn't Ollama already download models from its library using `ollama pull <model:tag>`?
 
 Yes, but wait, not so fast...!
 
@@ -10,13 +10,25 @@ Yes, but wait, not so fast...!
 
 While `ollama pull <model:tag>` certainly works, not always will you get lucky. This is a documented problem, see [issue 941](https://github.com/ollama/ollama/issues/941). The crux of the problem is that Ollama fails to pull a model from its library spitting out an error message as follows.
 
-> Error: digest mismatch, file must be downloaded again: want sha256:1a640cd4d69a5260bcc807a531f82ddb3890ebf49bc2a323e60a9290547135c1, got sha256:5eef5d8ec5ce977b74f91524c0002f9a7adeb61606cdbdad6460e25d58d0f454
+> `Error: digest mismatch, file must be downloaded again: want sha256:1a640cd4d69a5260bcc807a531f82ddb3890ebf49bc2a323e60a9290547135c1, got sha256:5eef5d8ec5ce977b74f91524c0002f9a7adeb61606cdbdad6460e25d58d0f454`
 
 People have been facing this for a variety of unrelated reasons and have found specific solutions that perhaps work for only when those specific reasons exist.
 
 [Comment 2989194688](https://github.com/ollama/ollama/issues/941#issuecomment-2989194688) in the issue thread proposes a manual way to download the models from the library. This solution is likely to work more than others.
 
 _Hence, this tool – an automation of that manual process_!
+
+Do note that, as of August 24, 2025, this Ollama downloader can also _download supported models from Hugging Face_!
+
+### Apart from `ollama pull`
+
+Ollama's issues with the `ollama pull` command can also implicitly bite you when using `ollama create`.
+
+As shown in the official [example of customising a prompt using a Modelfile](https://github.com/ollama/ollama?tab=readme-ov-file#customize-a-prompt), if you omit the step `ollama pull llama3.2`, then Ollama will automatically pull that model when you run `ollama create mario -f ./Modelfile`. Thus, if Ollama had issues with pulling that model, then those issues will hinder the custom model creation.
+
+Likewise, a more obvious command that will encounter the same issues as `ollama pull` is `ollama run`, which implicitly pulls the model if it does not exist.
+
+Thus, the safer route is to pull the model, in advance, using this downloader so that Ollama does not try to pull it implicitly (and fail at it).
 
 ### Yet another downloader?
 Yes, and there exist others, possibly with different purposes.
@@ -90,17 +102,16 @@ The `od` script provides the following commands. All its commands can be listed 
  A command-line interface for the Ollama downloader.
 
 
-╭─ Options ────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                  │
-╰──────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────╮
-│ show-config      Shows the application configuration as      │
-│                  JSON.                                       │
-│ list-models      Lists all available models.                 │
-│ list-tags        Lists all tags for a specific model.        │
-│ model-download   Downloads a specific Ollama model with the  │
-│                  given tag.                                  │
-╰──────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                     │
+╰─────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────╮
+│ show-config         Shows the application configuration as JSON.                │
+│ list-models         Lists all available models in the Ollama library.           │
+│ list-tags           Lists all tags for a specific model.                        │
+│ model-download      Downloads a specific Ollama model with the given tag.       │
+│ hf-model-download   Downloads a specified Hugging Face model.                   │
+╰─────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 You can also use `--help` on each command to see command-specific help.
@@ -206,9 +217,42 @@ _Notice that there are warnings that SSL verification has been disabled. This is
 
 ![demo-model-download](https://raw.githubusercontent.com/anirbanbasu/ollama-downloader/master/screencasts/demo_model_download.gif "model-download demo")
 
+### `hf-model-download`
+
+The `hfmodel-download` downloads the specified model from Hugging Face.
+
+During the process of downloading, the following are performed.
+
+1. Validation of the manifest for the specified model for the specified repository and organisation. _Note that not all Hugging Face models have the necessary files that can be downloaded into Ollama automatically._
+2. Validation of the SHA256 hash of each downloaded BLOB.
+3. Post-download verification with the Ollama server specified by `ollama_server.url` in the configuration that the downloaded model is available.
+
+As an example, run `uv run od model-download unsloth/gemma-3-270m-it-GGUF:Q4_K_M` to download the `gemma-3-270m-it-GGUF:Q4_K_M` model from `unsloth`, the details of which can be found at https://huggingface.co/unsloth/gemma-3-270m-it-GGUF.
+
+Running `uv run od hf-model-download --help` displays the following.
+
+```bash
+Usage: od hf-model-download [OPTIONS] ORG_REPO_MODEL
+
+ Downloads a specified Hugging Face model.
+
+
+╭─ Arguments ────────────────────────────────────────────────────────────────────╮
+│ *    org_repo_model      TEXT  The name of the specific Hugging Face model to  │
+│                                download, specified as <org>/<repo>:<model>,    │
+│                                e.g.,                                           │
+│                                bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.    │
+│                                [default: None]                                 │
+│                                [required]                                      │
+╰────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                    │
+╰────────────────────────────────────────────────────────────────────────────────╯
+```
+
 ## Testing and coverage
 
-To run the provided set of tests using `pytest`, execute the following in _WD_. Append the flag `--capture=tee-sys` to the following command to see the console output during the tests.
+To run the provided set of tests using `pytest`, execute the following in _WD_. Append the flag `--capture=tee-sys` to the following command to see the console output during the tests. Note that the model download tests run as sub-processes. Their outputs will not be visible by using this flag.
 
 ```bash
 uv run --group test pytest tests/

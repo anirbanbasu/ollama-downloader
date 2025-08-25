@@ -1,4 +1,6 @@
 from typer.testing import CliRunner
+import subprocess
+import sys
 
 from ollama_downloader.cli import app
 from ollama_downloader.data_models import AppSettings
@@ -34,3 +36,48 @@ def test_list_tags():
     # Expect at least two known tags to be listed for the gpt-oss model
     assert ":latest" in result.output.lower()
     assert ":20b" in result.output.lower()
+
+
+def test_model_download():
+    # Let's try downloading the smallest possible model to stop the test from taking too long
+    model_tag = "all-minilm:22m"
+    # Typer's CliRunner is unable to handle to cleanup of temp directories properly.
+    # Hence, we will invoke the CLI via subprocess instead.
+    result = subprocess.run(
+        [sys.executable, "-m", "ollama_downloader.cli", "model-download", model_tag],
+        capture_output=True,
+        text=True,
+        # Widen the columns to avoid wrapping the output
+        env={"LOG_LEVEL": "INFO", "COLUMNS": "256"},
+    )
+    assert result.returncode == 0
+    # Remove any trailing newlines for the comparison
+    assert f"{model_tag} successfully downloaded and saved" in result.stdout.rstrip(
+        "\n"
+    )
+
+
+def test_hf_model_download():
+    # Let's try downloading the smallest possible model to stop the test from taking too long
+    org_repo_model = "unsloth/gemma-3-270m-it-GGUF:Q4_K_M"
+    # Typer's CliRunner is unable to handle to cleanup of temp directories properly.
+    # Hence, we will invoke the CLI via subprocess instead.
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ollama_downloader.cli",
+            "hf-model-download",
+            org_repo_model,
+        ],
+        capture_output=True,
+        text=True,
+        # Widen the columns to avoid wrapping the output
+        env={"LOG_LEVEL": "INFO", "COLUMNS": "256"},
+    )
+    assert result.returncode == 0
+    # Remove any trailing newlines for the comparison
+    assert (
+        f"{org_repo_model} successfully downloaded and saved"
+        in result.stdout.rstrip("\n")
+    )
