@@ -33,6 +33,9 @@ class OllamaModelDownloader:
         self.settings = settings or AppSettings()
         if not self.settings.read_settings():
             self.settings.save_settings()
+            # Try reading again, if it fails again, we have no choice but to continue with defaults
+            # FIXME: This also fixes a weird issue with the ollama_server.url having or not having a trailing slash
+            self.settings.read_settings()
         self.unnecessary_files: Set[str] = set()
         self.models_tags: dict[str, list] = {}
         self.library_models: list[str] = []
