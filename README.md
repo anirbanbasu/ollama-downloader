@@ -232,22 +232,22 @@ As an example, run `uv run od model-download unsloth/gemma-3-270m-it-GGUF:Q4_K_M
 Running `uv run od hf-model-download --help` displays the following.
 
 ```bash
-Usage: od hf-model-download [OPTIONS] ORG_REPO_MODEL
+Usage: od hf-model-download [OPTIONS] USER_REPO_QUANT
 
  Downloads a specified Hugging Face model.
 
 
-╭─ Arguments ────────────────────────────────────────────────────────────────────╮
-│ *    org_repo_model      TEXT  The name of the specific Hugging Face model to  │
-│                                download, specified as <org>/<repo>:<model>,    │
-│                                e.g.,                                           │
-│                                bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.    │
-│                                [default: None]                                 │
-│                                [required]                                      │
-╰────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ──────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                    │
-╰────────────────────────────────────────────────────────────────────────────────╯
+╭─ Arguments ───────────────────────────────────────────────────────────────────╮
+│ *    user_repo_quant      TEXT  The name of the specific Hugging Face model   │
+│                                 to download, specified as                     │
+│                                 <username>/<repository>:<quantisation>, e.g., │
+│                                 bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.  │
+│                                 [default: None]                               │
+│                                 [required]                                    │
+╰───────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ─────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                   │
+╰───────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Testing and coverage

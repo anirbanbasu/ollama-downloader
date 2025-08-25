@@ -59,7 +59,7 @@ def test_model_download():
 
 def test_hf_model_download():
     # Let's try downloading the smallest possible model to stop the test from taking too long
-    org_repo_model = "unsloth/gemma-3-270m-it-GGUF:Q4_K_M"
+    user_repo_quant = "unsloth/gemma-3-270m-it-GGUF:Q4_K_M"
     # Typer's CliRunner is unable to handle to cleanup of temp directories properly.
     # Hence, we will invoke the CLI via subprocess instead.
     result = subprocess.run(
@@ -68,7 +68,7 @@ def test_hf_model_download():
             "-m",
             "ollama_downloader.cli",
             "hf-model-download",
-            org_repo_model,
+            user_repo_quant,
         ],
         capture_output=True,
         text=True,
@@ -78,6 +78,6 @@ def test_hf_model_download():
     assert result.returncode == 0
     # Remove any trailing newlines for the comparison
     assert (
-        f"{org_repo_model} successfully downloaded and saved"
+        f"{user_repo_quant} successfully downloaded and saved"
         in result.stdout.rstrip("\n")
     )
