@@ -6,7 +6,7 @@ on:
       - "pyproject.toml"
       - "uv.lock"
   pull_request:
-    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
@@ -33,4 +33,4 @@ jobs:
 
       - name: Run tests using pytest
       # Disable model_download tests on non self-hosted runners for now.
-        run: uv run --group test pytest tests/
+        run: uv run --group test pytest -v tests/
