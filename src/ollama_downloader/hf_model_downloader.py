@@ -37,9 +37,6 @@ class HuggingFaceModelDownloader:
         if not self.settings:
             self.settings = AppSettings()
             save_settings(self.settings)
-            # Try reading again, if it fails again, we have no choice but to continue with defaults
-            # FIXME: This also fixes a weird issue with the ollama_server.url having or not having a trailing slash
-            self.settings = self.settings or read_settings()
         self.unnecessary_files: Set[str] = set()
 
     def _get_manifest_url(self, user_repo_quant: str) -> str:

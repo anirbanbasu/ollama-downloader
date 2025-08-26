@@ -7,6 +7,8 @@ import tempfile
 from typing import Dict, List, Set, Tuple
 from urllib.parse import urlparse
 
+from httpx import URL
+
 from ollama_downloader.data_models import AppSettings, ImageManifest
 from ollama_downloader.common import logger
 from ollama_downloader.utils import get_httpx_client, read_settings, save_settings
@@ -35,14 +37,11 @@ class OllamaModelDownloader:
         if not self.settings:
             self.settings = AppSettings()
             save_settings(self.settings)
-            # Try reading again, if it fails again, we have no choice but to continue with defaults
-            # FIXME: This also fixes a weird issue with the ollama_server.url having or not having a trailing slash
-            self.settings = self.settings or read_settings()
         self.unnecessary_files: Set[str] = set()
         self.models_tags: Dict[str, list] = {}
         self.library_models: List[str] = []
 
-    def _get_manifest_url(self, model: str, tag: str) -> str:
+    def _get_manifest_url(self, model: str, tag: str) -> URL:
         """
         Construct the URL for a model manifest based on its name and tag.
 
@@ -51,14 +50,14 @@ class OllamaModelDownloader:
             tag (str): The tag of the model, e.g., latest.
 
         Returns:
-            str: The URL for the model manifest.
+            URL: The URL for the model manifest.
         """
         logger.debug(f"Constructing manifest URL for {model}:{tag}")
-        return (
-            f"{self.settings.ollama_library.registry_base_url}{model}/manifests/{tag}"
+        return URL(self.settings.ollama_library.registry_base_url).join(
+            f"{model}/manifests/{tag}"
         )
 
-    def _get_blob_url(self, model: str, digest: str) -> str:
+    def _get_blob_url(self, model: str, digest: str) -> URL:
         """
         Construct the URL for a BLOB based on its digest.
 
@@ -67,10 +66,12 @@ class OllamaModelDownloader:
             digest (str): The digest of the BLOB prefixed with the digest algorithm followed by a colon character.
 
         Returns:
-            str: The URL for the BLOB.
+            URL: The URL for the BLOB.
         """
         logger.debug(f"Constructing BLOB URL for {model} with digest {digest}")
-        return f"{self.settings.ollama_library.registry_base_url}{model}/blobs/{digest.replace(':', '-')}"
+        return URL(self.settings.ollama_library.registry_base_url).join(
+            f"{model}/blobs/{digest.replace(':', '-')}"
+        )
 
     def _fetch_manifest(self, model: str, tag: str) -> str:
         """
@@ -399,6 +400,7 @@ class OllamaModelDownloader:
         self.load_models_tags_cache()
         if not hasattr(self, "library_models") or update:
             self.update_models_list()
+        _base_url = URL(self.settings.ollama_library.library_base_url)
         with get_httpx_client(
             verify=self.settings.ollama_library.verify_ssl,
             timeout=self.settings.ollama_library.timeout,
@@ -412,9 +414,7 @@ class OllamaModelDownloader:
                         logger.debug(
                             f"Fetching tags for model {model} from the Ollama library."
                         )
-                        tags_response = client.get(
-                            f"{self.settings.ollama_library.library_base_url}/{model}/tags"
-                        )
+                        tags_response = client.get(_base_url.join(f"{model}/tags"))
                         tags_response.raise_for_status()
                         logger.debug(f"Parsing tags for model {model}.")
                         parsed_tags_html = lxml.html.document_fromstring(
@@ -458,9 +458,7 @@ class OllamaModelDownloader:
                             total=len(self.library_models),
                         )
                         for m in self.library_models:
-                            tags_response = client.get(
-                                f"{self.settings.ollama_library.library_base_url}/{m}/tags"
-                            )
+                            tags_response = client.get(_base_url.join(f"{m}/tags"))
                             tags_response.raise_for_status()
                             parsed_tags_html = lxml.html.document_fromstring(
                                 tags_response.text
