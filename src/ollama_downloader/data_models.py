@@ -1,8 +1,6 @@
 import os
 from pydantic import BaseModel, Field, HttpUrl, AfterValidator
-from typing import ClassVar, Optional, Tuple, Annotated
-
-from ollama_downloader.common import logger
+from typing import Optional, Tuple, Annotated
 
 
 class OllamaServer(BaseModel, validate_assignment=True):
@@ -52,10 +50,6 @@ class OllamaLibrary(BaseModel):
 
 
 class AppSettings(BaseModel):
-    # ClassVar annotation is necessary to differentiate these from Pydantic fields
-    _settings_dir: ClassVar[str] = "conf"
-    _settings_file: ClassVar[str] = os.path.join(_settings_dir, "settings.json")
-
     ollama_server: OllamaServer = Field(
         default=OllamaServer(),
         description="Settings for the Ollama server connection.",
@@ -64,52 +58,6 @@ class AppSettings(BaseModel):
         default=OllamaLibrary(),
         description="Settings for accessing the Ollama library and storing locally.",
     )
-
-    def read_settings(self) -> bool:
-        """
-        Load settings from the configuration file.
-
-        Returns:
-            bool: True if settings were loaded successfully, False otherwise.
-        """
-        try:
-            with open(AppSettings._settings_file, "r") as f:
-                # Parse the JSON file into the AppSettings model
-                new_instance = AppSettings.model_validate_json(f.read())
-            # Update the current instance with the loaded settings
-            self.__dict__.update(new_instance.__dict__)
-            return True
-        except FileNotFoundError:
-            logger.error(
-                f"[bold red]Configuration file {AppSettings._settings_file} not found.[/bold red]"
-            )
-            return False
-        except Exception as e:
-            logger.exception(
-                f"[bold red]Error loading settings from {AppSettings._settings_file}: {e}[/bold red]"
-            )
-            return False
-
-    def save_settings(self) -> bool:
-        """
-        Save the application settings to the configuration file.
-
-        Returns:
-            bool: True if settings were saved successfully, False otherwise.
-        """
-        try:
-            os.makedirs(AppSettings._settings_dir, exist_ok=True)
-            with open(AppSettings._settings_file, "w") as f:
-                f.write(self.model_dump_json(indent=4))
-            logger.info(
-                f"[bold green]Settings saved to {AppSettings._settings_file}[/bold green]"
-            )
-            return True
-        except Exception as e:
-            logger.exception(
-                f"[bold red]Error saving settings to {AppSettings._settings_file}: {e}[/bold red]"
-            )
-            return False
 
 
 class ImageManifestConfig(BaseModel):

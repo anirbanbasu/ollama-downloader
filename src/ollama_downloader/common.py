@@ -1,13 +1,9 @@
 import logging
-import os
-import ssl
-
-import certifi
-import httpx
 import platform
 
 from rich.logging import RichHandler
 
+from environs import env
 
 try:
     from icecream import ic
@@ -24,37 +20,7 @@ logging.basicConfig(
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
-logger.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
+logger.setLevel(env.str("LOG_LEVEL", default="INFO").upper())
 
-UA_NAME_VER = "ollama-downloader/0.1.0"
+UA_NAME_VER = env.str("OD_UA_NAME_VER", default="ollama-downloader/0.1.0")
 user_agent = f"{UA_NAME_VER} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
-
-
-def get_httpx_client(verify: bool, timeout: float) -> httpx.Client:
-    """
-    Obtain an HTTPX client for making requests.
-
-    Args:
-        verify (bool): Whether to verify SSL certificates.
-        timeout (float): The timeout for requests in seconds.
-
-    Returns:
-        httpx.Client: An HTTPX client configured with the specified settings.
-    """
-    if verify is False:
-        logger.warning(
-            "SSL verification is disabled. This is not recommended for production use."
-        )
-    ctx = ssl.create_default_context(
-        cafile=os.environ.get("SSL_CERT_FILE", default=certifi.where()),
-        capath=os.environ.get("SSL_CERT_DIR", default=None),
-    )
-    client = httpx.Client(
-        verify=verify if (verify is not None and verify is False) else ctx,
-        follow_redirects=True,
-        trust_env=True,
-        http2=True,
-        timeout=timeout,
-        headers={"User-Agent": user_agent},
-    )
-    return client

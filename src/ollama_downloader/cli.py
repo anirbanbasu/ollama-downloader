@@ -7,6 +7,7 @@ from rich import print_json as printj
 
 
 from ollama_downloader.common import logger
+from ollama_downloader.utils import cleanup_unnecessary_files
 from ollama_downloader.model_downloader import OllamaModelDownloader
 from ollama_downloader.hf_model_downloader import HuggingFaceModelDownloader
 
@@ -76,15 +77,15 @@ def model_download(
 
 @app.command()
 def hf_model_download(
-    org_repo_model: Annotated[
+    user_repo_quant: Annotated[
         str,
         typer.Argument(
-            help="The name of the specific Hugging Face model to download, specified as <org>/<repo>:<model>, e.g., bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.",
+            help="The name of the specific Hugging Face model to download, specified as <username>/<repository>:<quantisation>, e.g., bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.",
         ),
     ],
 ):
     """Downloads a specified Hugging Face model."""
-    hf_model_downloader.download_model(org_repo_model=org_repo_model)
+    hf_model_downloader.download_model(user_repo_quant=user_repo_quant)
 
 
 def main():
@@ -94,9 +95,9 @@ def main():
         typer.echo("Program interrupt detected. Performing graceful shutdown...")
         # Add your cleanup logic here, e.g., closing files, releasing resources
         if model_downloader:
-            model_downloader._cleanup_unnecessary_files()
+            cleanup_unnecessary_files(model_downloader.unnecessary_files)
         if hf_model_downloader:
-            hf_model_downloader._cleanup_unnecessary_files()
+            cleanup_unnecessary_files(hf_model_downloader.unnecessary_files)
         # Exit the application gracefully
         sys.exit(0)
 
@@ -110,10 +111,9 @@ def main():
     finally:
         # Perform any necessary cleanup here
         if model_downloader:
-            # Ensure we clean up temporary files
-            model_downloader._cleanup_unnecessary_files()
+            cleanup_unnecessary_files(model_downloader.unnecessary_files)
         if hf_model_downloader:
-            hf_model_downloader._cleanup_unnecessary_files()
+            cleanup_unnecessary_files(hf_model_downloader.unnecessary_files)
 
 
 if __name__ == "__main__":
