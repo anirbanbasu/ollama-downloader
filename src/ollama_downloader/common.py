@@ -1,6 +1,7 @@
 import logging
 import os
 import ssl
+from typing import Set
 
 import certifi
 import httpx
@@ -58,3 +59,33 @@ def get_httpx_client(verify: bool, timeout: float) -> httpx.Client:
         headers={"User-Agent": user_agent},
     )
     return client
+
+
+def cleanup_unnecessary_files(unnecessary_files: Set[str]):
+    """
+    Cleans up unnecessary files and directories.
+
+    Args:
+        unnecessary_files (Set[str]): A set of file paths to be removed.
+    """
+    list_of_unnecessary_files = list(unnecessary_files)
+    unnecessary_directories = set()
+    for file_object in list_of_unnecessary_files:
+        try:
+            if not os.path.isdir(file_object):
+                os.remove(file_object)
+                logger.info(f"Removed unnecessary file: {file_object}")
+            else:
+                # If it's a directory, we don't remove it yet because it may not be empty.
+                unnecessary_directories.add(file_object)
+            unnecessary_files.remove(file_object)
+        except Exception as e:
+            logger.error(f"Failed to remove unnecessary file {file_object}: {e}")
+
+    # Now remove unnecessary directories if they are empty
+    for directory in unnecessary_directories:
+        try:
+            os.rmdir(directory)
+            logger.info(f"Removed unnecessary directory: {directory}")
+        except OSError as e:
+            logger.error(f"Failed to remove unnecessary directory {directory}: {e}")

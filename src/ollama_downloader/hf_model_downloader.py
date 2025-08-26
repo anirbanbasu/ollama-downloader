@@ -35,35 +35,9 @@ class HuggingFaceModelDownloader:
         self.settings = settings or AppSettings()
         if not self.settings.read_settings():
             self.settings.save_settings()
+            # FIXME: This also fixes a weird issue with the ollama_server.url having or not having a trailing slash
+            self.settings.read_settings()
         self.unnecessary_files: Set[str] = set()
-        self.models_tags: dict[str, list] = {}
-
-    def _cleanup_unnecessary_files(self):
-        """
-        Clean up temporary files created during the download process.
-        These could include files downloaded but need to be removed because the entire model download failed or was interrupted.
-        """
-        list_of_unnecessary_files = list(self.unnecessary_files)
-        unnecessary_directories = set()
-        for file_object in list_of_unnecessary_files:
-            try:
-                if not os.path.isdir(file_object):
-                    os.remove(file_object)
-                    logger.info(f"Removed unnecessary file: {file_object}")
-                else:
-                    # If it's a directory, we don't remove it yet because it may not be empty.
-                    unnecessary_directories.add(file_object)
-                self.unnecessary_files.remove(file_object)
-            except Exception as e:
-                logger.error(f"Failed to remove unnecessary file {file_object}: {e}")
-
-        # Now remove unnecessary directories if they are empty
-        for directory in unnecessary_directories:
-            try:
-                os.rmdir(directory)
-                logger.info(f"Removed unnecessary directory: {directory}")
-            except OSError as e:
-                logger.error(f"Failed to remove unnecessary directory {directory}: {e}")
 
     def _get_manifest_url(self, user_repo_quant: str) -> str:
         """
