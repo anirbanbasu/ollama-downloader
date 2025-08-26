@@ -9,6 +9,7 @@ import platform
 
 from rich.logging import RichHandler
 
+from environs import env
 
 try:
     from icecream import ic
@@ -25,10 +26,15 @@ logging.basicConfig(
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
-logger.setLevel(os.environ.get("LOG_LEVEL", "INFO").upper())
+logger.setLevel(env.str("LOG_LEVEL", default="INFO").upper())
 
-UA_NAME_VER = "ollama-downloader/0.1.0"
+UA_NAME_VER = env.str("OD_UA_NAME_VER", default="ollama-downloader/0.1.0")
 user_agent = f"{UA_NAME_VER} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
+
+CONF_DIR = env.str("OD_CONF_DIR", default="conf")
+SETTINGS_FILE = os.path.join(
+    CONF_DIR, env.str("OD_SETTINGS_FILE", default="settings.json")
+)
 
 
 def get_httpx_client(verify: bool, timeout: float) -> httpx.Client:

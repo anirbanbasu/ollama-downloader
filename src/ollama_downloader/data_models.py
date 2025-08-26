@@ -1,8 +1,8 @@
 import os
 from pydantic import BaseModel, Field
-from typing import ClassVar, Optional, Tuple
+from typing import Optional, Tuple
 
-from ollama_downloader.common import logger
+from ollama_downloader.common import CONF_DIR, SETTINGS_FILE, logger
 
 
 class OllamaServer(BaseModel):
@@ -52,10 +52,6 @@ class OllamaLibrary(BaseModel):
 
 
 class AppSettings(BaseModel):
-    # ClassVar annotation is necessary to differentiate these from Pydantic fields
-    _settings_dir: ClassVar[str] = "conf"
-    _settings_file: ClassVar[str] = os.path.join(_settings_dir, "settings.json")
-
     ollama_server: OllamaServer = Field(
         default=OllamaServer(),
         description="Settings for the Ollama server connection.",
@@ -73,7 +69,7 @@ class AppSettings(BaseModel):
             bool: True if settings were loaded successfully, False otherwise.
         """
         try:
-            with open(AppSettings._settings_file, "r") as f:
+            with open(SETTINGS_FILE, "r") as f:
                 # Parse the JSON file into the AppSettings model
                 new_instance = AppSettings.model_validate_json(f.read())
             # Update the current instance with the loaded settings
@@ -81,12 +77,12 @@ class AppSettings(BaseModel):
             return True
         except FileNotFoundError:
             logger.error(
-                f"[bold red]Configuration file {AppSettings._settings_file} not found.[/bold red]"
+                f"[bold red]Configuration file {SETTINGS_FILE} not found.[/bold red]"
             )
             return False
         except Exception as e:
             logger.exception(
-                f"[bold red]Error loading settings from {AppSettings._settings_file}: {e}[/bold red]"
+                f"[bold red]Error loading settings from {SETTINGS_FILE}: {e}[/bold red]"
             )
             return False
 
@@ -98,16 +94,14 @@ class AppSettings(BaseModel):
             bool: True if settings were saved successfully, False otherwise.
         """
         try:
-            os.makedirs(AppSettings._settings_dir, exist_ok=True)
-            with open(AppSettings._settings_file, "w") as f:
+            os.makedirs(CONF_DIR, exist_ok=True)
+            with open(SETTINGS_FILE, "w") as f:
                 f.write(self.model_dump_json(indent=4))
-            logger.info(
-                f"[bold green]Settings saved to {AppSettings._settings_file}[/bold green]"
-            )
+            logger.info(f"[bold green]Settings saved to {SETTINGS_FILE}[/bold green]")
             return True
         except Exception as e:
             logger.exception(
-                f"[bold red]Error saving settings to {AppSettings._settings_file}: {e}[/bold red]"
+                f"[bold red]Error saving settings to {SETTINGS_FILE}: {e}[/bold red]"
             )
             return False
 
