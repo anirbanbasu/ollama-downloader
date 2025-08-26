@@ -1,4 +1,3 @@
-import os
 from pydantic import BaseModel, Field, DirectoryPath
 from typing import Optional, Tuple
 from pathlib import Path
