@@ -1,4 +1,5 @@
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3120/) [![pytest](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml/badge.svg)](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3120/) [![pytest](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml/badge.svg)](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/anirbanbasu/ollama-downloader/latest)
+ [![PyPI](https://img.shields.io/pypi/v/ollama-downloader?label=pypi%20package)](https://pypi.org/project/ollama-downloader/#history)
 
 # Ollama (library and Hugging Face) model downloader
 
@@ -41,11 +42,16 @@ Yes, and there exist others, possibly with different purposes.
 
 The directory where you clone this repository will be referred to as the _working directory_ or _WD_ hereinafter.
 
+### Using `pip`
+Although the rest of this README details the installation and usage of this downloader tool using the `uv` package manager, you can also use `pip` to install it from PyPI in a virtual environment of your choice by running `pip install ollama-downloader`. Thereafter, the scripts `od` and `ollama-downloader` will be available to you in that virtual environment.
+
+### Using `uv` (preferred)
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/). To install the project with its minimal dependencies in a virtual environment, run the following in the _WD_. To install all non-essential dependencies (_which are required for developing and testing_), replace the `--no-dev` with the `--all-groups` flag in the following command.
 
 ```bash
 uv sync --no-dev
 ```
+
 ## Configuration
 
 There will exist, upon execution of the tool, a configuration file `conf/settings.json` in _WD_. It will be created upon the first run. However, you will need to modify it depending on your Ollama installation.
@@ -89,10 +95,21 @@ There are two main configuration groups: `ollama_server` and `ollama_library`. T
  - The self-explanatory `timeout` specifies the number of seconds to wait before any HTTPS connection to the Ollama registry or library should be allowed to fail.
  - The `user_group` is a specification of the _user_ and the _group_ (as a tuple, e.g., `"user_group": ["user", "group"]`) that owns the path specified by `models_path`. If, for instance, your local Ollama is a service and its model path is `/usr/share/ollama/.ollama/models` then, in order to write to that path, you must run this downloader as _root_. However, the ownership of file objects in that path must be assigned to the user _ollama_ and group _ollama_. If your model path is on a writable network share then you most likely need not specify the user and group.
 
-## Usage
-The preferred way to run this downloader is using the `od` script, such as `uv run od --help`.
+## Environment variables
 
-However, if you need to run it with superuser rights (i.e., using `sudo`) for model download then you should install the script in the `uv` created virtual environment by running `uv pip install -e .` and then you can invoke it as `sudo .venv/bin/od --help`.
+All the environment variables, listed below, are _optional_. If not specified, their default values will be used.
+
+| Variable           | Description and default value(s)                                     |
+|--------------------|----------------------------------------------------------------------|
+| `LOG_LEVEL`        | The level to be set for the logger. Default value is `INFO`. See all valid values in [Python 3 logging documentation](https://docs.python.org/3/library/logging.html#levels).|
+| `OD_CONF_DIR`      | The directory for config files. Default value is `conf` relative to the project root.|
+| `OD_SETTINGS_FILE` | The name of the settings file. Default value is `settings.json` in the `OD_CONF_DIR`.|
+| `OD_UA_NAME_VER`   | The application name and version to be prepended to the User-Agent header when making HTTP(S) requests. Default value is `ollama-downloader/0.1.0`.|
+
+## Usage
+The preferred way to run this downloader is using the `od` script, such as `uv run od --help`, or `od --help`, if you installed the downloader using `pip`. The script `ollama-downloader` is also available and is an alias of `od`.
+
+However, if you need to run it with superuser rights (i.e., using `sudo`) for model download then you should install the script in the `uv` created virtual environment by running `uv pip install -e .`, or install the `ollama-downloader` package from PyPI in a virtual environment. Then you can invoke it as `sudo .venv/bin/od --help` (assuming that your virtual environment exists in `.venv`).
 
 The `od` script provides the following commands. All its commands can be listed by running `uv run od --help`.
 
@@ -118,7 +135,7 @@ You can also use `--help` on each command to see command-specific help.
 
 ### `show-config`
 
-The `show-config` command simply displays the current configuration from `conf/settings.json`, if it exists. If it does not exist, it creates that file with the default settings and shows the content of that file.
+The `show-config` command simply displays the current configuration from the settings file in the configurations directory, if it exists. If it does not exist, it creates that file with the default settings and shows the content of that file.
 
 Running `uv run od show-config --help` displays the following.
 
@@ -232,22 +249,22 @@ As an example, run `uv run od model-download unsloth/gemma-3-270m-it-GGUF:Q4_K_M
 Running `uv run od hf-model-download --help` displays the following.
 
 ```bash
-Usage: od hf-model-download [OPTIONS] ORG_REPO_MODEL
+Usage: od hf-model-download [OPTIONS] USER_REPO_QUANT
 
  Downloads a specified Hugging Face model.
 
 
-╭─ Arguments ────────────────────────────────────────────────────────────────────╮
-│ *    org_repo_model      TEXT  The name of the specific Hugging Face model to  │
-│                                download, specified as <org>/<repo>:<model>,    │
-│                                e.g.,                                           │
-│                                bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.    │
-│                                [default: None]                                 │
-│                                [required]                                      │
-╰────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ──────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                    │
-╰────────────────────────────────────────────────────────────────────────────────╯
+╭─ Arguments ───────────────────────────────────────────────────────────────────╮
+│ *    user_repo_quant      TEXT  The name of the specific Hugging Face model   │
+│                                 to download, specified as                     │
+│                                 <username>/<repository>:<quantisation>, e.g., │
+│                                 bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M.  │
+│                                 [default: None]                               │
+│                                 [required]                                    │
+╰───────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ─────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                   │
+╰───────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Testing and coverage

@@ -4,11 +4,12 @@ import json
 import os
 import shutil
 import tempfile
-from typing import List, Set, Tuple
+from typing import Dict, List, Set, Tuple
 from urllib.parse import urlparse
 
 from ollama_downloader.data_models import AppSettings, ImageManifest
-from ollama_downloader.common import logger, get_httpx_client
+from ollama_downloader.common import logger
+from ollama_downloader.utils import get_httpx_client, read_settings, save_settings
 import lxml.html
 from ollama import Client as OllamaClient
 
@@ -30,42 +31,16 @@ class OllamaModelDownloader:
         Args:
             settings (AppSettings | None): The application settings. If None, defaults will be used.
         """
-        self.settings = settings or AppSettings()
-        if not self.settings.read_settings():
-            self.settings.save_settings()
+        self.settings = settings or read_settings()
+        if not self.settings:
+            self.settings = AppSettings()
+            save_settings(self.settings)
             # Try reading again, if it fails again, we have no choice but to continue with defaults
             # FIXME: This also fixes a weird issue with the ollama_server.url having or not having a trailing slash
-            self.settings.read_settings()
+            self.settings = self.settings or read_settings()
         self.unnecessary_files: Set[str] = set()
-        self.models_tags: dict[str, list] = {}
-        self.library_models: list[str] = []
-
-    def _cleanup_unnecessary_files(self):
-        """
-        Clean up temporary files created during the download process.
-        These could include files downloaded but need to be removed because the entire model download failed or was interrupted.
-        """
-        list_of_unnecessary_files = list(self.unnecessary_files)
-        unnecessary_directories = set()
-        for file_object in list_of_unnecessary_files:
-            try:
-                if not os.path.isdir(file_object):
-                    os.remove(file_object)
-                    logger.info(f"Removed unnecessary file: {file_object}")
-                else:
-                    # If it's a directory, we don't remove it yet because it may not be empty.
-                    unnecessary_directories.add(file_object)
-                self.unnecessary_files.remove(file_object)
-            except Exception as e:
-                logger.error(f"Failed to remove unnecessary file {file_object}: {e}")
-
-        # Now remove unnecessary directories if they are empty
-        for directory in unnecessary_directories:
-            try:
-                os.rmdir(directory)
-                logger.info(f"Removed unnecessary directory: {directory}")
-            except OSError as e:
-                logger.error(f"Failed to remove unnecessary directory {directory}: {e}")
+        self.models_tags: Dict[str, list] = {}
+        self.library_models: List[str] = []
 
     def _get_manifest_url(self, model: str, tag: str) -> str:
         """

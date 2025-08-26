@@ -6,7 +6,8 @@ import tempfile
 from typing import List, Set, Tuple
 
 from ollama_downloader.data_models import AppSettings, ImageManifest
-from ollama_downloader.common import logger, get_httpx_client
+from ollama_downloader.common import logger
+from ollama_downloader.utils import get_httpx_client, read_settings, save_settings
 
 # import lxml.html
 from ollama import Client as OllamaClient
@@ -32,78 +33,58 @@ class HuggingFaceModelDownloader:
         Args:
             settings (AppSettings | None): The application settings. If None, defaults will be used.
         """
-        self.settings = settings or AppSettings()
-        if not self.settings.read_settings():
-            self.settings.save_settings()
+        self.settings = settings or read_settings()
+        if not self.settings:
+            self.settings = AppSettings()
+            save_settings(self.settings)
+            # Try reading again, if it fails again, we have no choice but to continue with defaults
+            # FIXME: This also fixes a weird issue with the ollama_server.url having or not having a trailing slash
+            self.settings = self.settings or read_settings()
         self.unnecessary_files: Set[str] = set()
-        self.models_tags: dict[str, list] = {}
 
-    def _cleanup_unnecessary_files(self):
-        """
-        Clean up temporary files created during the download process.
-        These could include files downloaded but need to be removed because the entire model download failed or was interrupted.
-        """
-        list_of_unnecessary_files = list(self.unnecessary_files)
-        unnecessary_directories = set()
-        for file_object in list_of_unnecessary_files:
-            try:
-                if not os.path.isdir(file_object):
-                    os.remove(file_object)
-                    logger.info(f"Removed unnecessary file: {file_object}")
-                else:
-                    # If it's a directory, we don't remove it yet because it may not be empty.
-                    unnecessary_directories.add(file_object)
-                self.unnecessary_files.remove(file_object)
-            except Exception as e:
-                logger.error(f"Failed to remove unnecessary file {file_object}: {e}")
-
-        # Now remove unnecessary directories if they are empty
-        for directory in unnecessary_directories:
-            try:
-                os.rmdir(directory)
-                logger.info(f"Removed unnecessary directory: {directory}")
-            except OSError as e:
-                logger.error(f"Failed to remove unnecessary directory {directory}: {e}")
-
-    def _get_manifest_url(self, org_repo_model: str) -> str:
+    def _get_manifest_url(self, user_repo_quant: str) -> str:
         """
         Construct the URL for a model manifest based on its name and tag.
 
         Args:
-            org_repo_model (str): The model identifier in the format "org/repo:model".
+            user_repo_quant (str): The model identifier in the format "username/repository:quantisation".
 
         Returns:
             str: The URL for the model manifest.
         """
-        logger.debug(f"Constructing manifest URL for {org_repo_model}")
-        return f"{HuggingFaceModelDownloader.HF_BASE_URL}{org_repo_model.replace(':', '/manifests/')}"
+        logger.debug(f"Constructing manifest URL for {user_repo_quant}")
+        return f"{HuggingFaceModelDownloader.HF_BASE_URL}{user_repo_quant.replace(':', '/manifests/')}"
 
-    def _get_blob_url(self, org_repo_model: str, digest: str) -> str:
+    def _get_blob_url(self, user_repo_quant: str, digest: str) -> str:
         """
         Construct the URL for a BLOB based on its digest.
 
         Args:
-            org_repo_model (str): The model identifier in the format "org/repo:model".
+            user_repo_quant (str): The model identifier in the format "username/repository:quantisation".
             digest (str): The digest of the BLOB prefixed with the digest algorithm followed by a colon character.
 
         Returns:
             str: The URL for the BLOB.
         """
-        logger.debug(f"Constructing BLOB URL for {org_repo_model} with digest {digest}")
-        return f"{HuggingFaceModelDownloader.HF_BASE_URL}{org_repo_model.split(':')[0]}/blobs/{digest}"
+        logger.debug(
+            f"Constructing BLOB URL for {user_repo_quant} with digest {digest}"
+        )
+        return f"{HuggingFaceModelDownloader.HF_BASE_URL}{user_repo_quant.split(':')[0]}/blobs/{digest}"
 
-    def _fetch_manifest(self, org_repo_model: str) -> str:
+    def _fetch_manifest(self, user_repo_quant: str) -> str:
         """
         Fetch the manifest for a model from the Ollama registry.
 
         Args:
-            org_repo_model (str): The model identifier in the format "org/repo:model".
+            user_repo_quant (str): The model identifier in the format "username/repository:quantisation".
 
         Returns:
             str: The JSON string of the model manifest.
         """
-        url = self._get_manifest_url(org_repo_model=org_repo_model)
-        logger.info(f"Downloading manifest for [bold cyan]{org_repo_model}[/bold cyan]")
+        url = self._get_manifest_url(user_repo_quant=user_repo_quant)
+        logger.info(
+            f"Downloading manifest for [bold cyan]{user_repo_quant}[/bold cyan]"
+        )
         with get_httpx_client(
             self.settings.ollama_library.verify_ssl,
             self.settings.ollama_library.timeout,
@@ -112,18 +93,18 @@ class HuggingFaceModelDownloader:
             response.raise_for_status()
             return response.text
 
-    def _download_model_blob(self, org_repo_model: str, named_digest: str) -> tuple:
+    def _download_model_blob(self, user_repo_quant: str, named_digest: str) -> tuple:
         """
         Download a file given the digest and save it to the specified destination.
 
         Args:
-            org_repo_model (str): The model identifier in the format "org/repo:model".
+            user_repo_quant (str): The model identifier in the format "username/repository:quantisation".
             named_digest (str): The digest of the BLOB prefixed with the digest algorithm followed by a colon character.
 
         Returns:
             tuple: A tuple containing the path to the downloaded file and its computed SHA256 digest.
         """
-        url = self._get_blob_url(org_repo_model=org_repo_model, digest=named_digest)
+        url = self._get_blob_url(user_repo_quant=user_repo_quant, digest=named_digest)
         # try:
         sha256_hash = hashlib.new("sha256")
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
@@ -160,14 +141,14 @@ class HuggingFaceModelDownloader:
     def _save_manifest_to_destination(
         self,
         data: str,
-        org_repo_model: str,
+        user_repo_quant: str,
     ) -> str:
         """
         Copy a manifest data to destination.
 
         Args:
             data (str): The JSON string of the manifest.
-            org_repo_model (str): The model identifier in the format "org/repo:model".
+            user_repo_quant (str): The model identifier in the format "username/repository:quantisation".
 
         Returns:
             str: The path to the saved manifest file.
@@ -180,7 +161,7 @@ class HuggingFaceModelDownloader:
             ),
             "manifests",
         )
-        org_repo_model_splits = org_repo_model.split(":")
+        org_repo_model_splits = user_repo_quant.split(":")
         manifests_dir = os.path.join(
             manifests_toplevel_dir,
             HuggingFaceModelDownloader.HF_BASE_HOST,
@@ -262,17 +243,17 @@ class HuggingFaceModelDownloader:
         self.unnecessary_files.add(target_file)
         return True, target_file
 
-    def download_model(self, org_repo_model: str) -> None:
+    def download_model(self, user_repo_quant: str) -> None:
         # Implementation of the model downloading logic
         """
         Download a model from the Ollama server.
 
         Args:
-            org_repo_model (str): The model identifier in the format "org/repo:model".
+            user_repo_quant (str): The model identifier in the format "username/repository:quantisation".
         """
         # Validate the response as an ImageManifest but don't enforce strict validation
-        manifest_json = self._fetch_manifest(org_repo_model=org_repo_model)
-        logger.debug(f"Validating manifest for {org_repo_model}")
+        manifest_json = self._fetch_manifest(user_repo_quant=user_repo_quant)
+        logger.debug(f"Validating manifest for {user_repo_quant}")
         manifest = ImageManifest.model_validate_json(manifest_json, strict=False)
         logger.info(
             f"Downloading model configuration [bold cyan]{manifest.config.digest}[/bold cyan]"
@@ -283,7 +264,7 @@ class HuggingFaceModelDownloader:
         files_to_be_copied: List[Tuple[str, str, str]] = []
         # Download the model configuration BLOB
         file_model_config, digest_model_config = self._download_model_blob(
-            org_repo_model=org_repo_model,
+            user_repo_quant=user_repo_quant,
             named_digest=manifest.config.digest,
         )
         files_to_be_copied.append(
@@ -297,7 +278,7 @@ class HuggingFaceModelDownloader:
                 f"Downloading [bold cyan]{layer.mediaType}[/bold cyan] layer [bold cyan]{layer.digest}[/bold cyan]"
             )
             file_layer, digest_layer = self._download_model_blob(
-                org_repo_model=org_repo_model,
+                user_repo_quant=user_repo_quant,
                 named_digest=layer.digest,
             )
             files_to_be_copied.append((file_layer, layer.digest, digest_layer))
@@ -313,7 +294,7 @@ class HuggingFaceModelDownloader:
         # Finally, save the manifest to its appropriate destination
         self._save_manifest_to_destination(
             data=manifest_json,
-            org_repo_model=org_repo_model,
+            user_repo_quant=user_repo_quant,
         )
         ts_approximate_manifest_save = datetime.datetime.now()
         # Finally check if it exists in the Ollama
@@ -327,7 +308,7 @@ class HuggingFaceModelDownloader:
         )
         models_list = ollama_client.list()
         found_model = None
-        search_model = f"{HuggingFaceModelDownloader.HF_BASE_HOST}/{org_repo_model}"
+        search_model = f"{HuggingFaceModelDownloader.HF_BASE_HOST}/{user_repo_quant}"
         for model_info in models_list.models:
             if (
                 model_info.model == search_model
