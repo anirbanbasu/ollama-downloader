@@ -1,8 +1,5 @@
-import os
 from pydantic import BaseModel, Field
 from typing import Optional, Tuple
-
-from ollama_downloader.common import CONF_DIR, SETTINGS_FILE, logger
 
 
 class OllamaServer(BaseModel):
@@ -60,50 +57,6 @@ class AppSettings(BaseModel):
         default=OllamaLibrary(),
         description="Settings for accessing the Ollama library and storing locally.",
     )
-
-    def read_settings(self) -> bool:
-        """
-        Load settings from the configuration file.
-
-        Returns:
-            bool: True if settings were loaded successfully, False otherwise.
-        """
-        try:
-            with open(SETTINGS_FILE, "r") as f:
-                # Parse the JSON file into the AppSettings model
-                new_instance = AppSettings.model_validate_json(f.read())
-            # Update the current instance with the loaded settings
-            self.__dict__.update(new_instance.__dict__)
-            return True
-        except FileNotFoundError:
-            logger.error(
-                f"[bold red]Configuration file {SETTINGS_FILE} not found.[/bold red]"
-            )
-            return False
-        except Exception as e:
-            logger.exception(
-                f"[bold red]Error loading settings from {SETTINGS_FILE}: {e}[/bold red]"
-            )
-            return False
-
-    def save_settings(self) -> bool:
-        """
-        Save the application settings to the configuration file.
-
-        Returns:
-            bool: True if settings were saved successfully, False otherwise.
-        """
-        try:
-            os.makedirs(CONF_DIR, exist_ok=True)
-            with open(SETTINGS_FILE, "w") as f:
-                f.write(self.model_dump_json(indent=4))
-            logger.info(f"[bold green]Settings saved to {SETTINGS_FILE}[/bold green]")
-            return True
-        except Exception as e:
-            logger.exception(
-                f"[bold red]Error saving settings to {SETTINGS_FILE}: {e}[/bold red]"
-            )
-            return False
 
 
 class ImageManifestConfig(BaseModel):

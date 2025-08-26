@@ -6,7 +6,8 @@ from rich import print as print
 from rich import print_json as printj
 
 
-from ollama_downloader.common import cleanup_unnecessary_files, logger
+from ollama_downloader.common import logger
+from ollama_downloader.utils import cleanup_unnecessary_files
 from ollama_downloader.model_downloader import OllamaModelDownloader
 from ollama_downloader.hf_model_downloader import HuggingFaceModelDownloader
 

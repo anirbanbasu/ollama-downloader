@@ -6,7 +6,8 @@ import tempfile
 from typing import List, Set, Tuple
 
 from ollama_downloader.data_models import AppSettings, ImageManifest
-from ollama_downloader.common import logger, get_httpx_client
+from ollama_downloader.common import logger
+from ollama_downloader.utils import get_httpx_client, read_settings, save_settings
 
 # import lxml.html
 from ollama import Client as OllamaClient
@@ -32,11 +33,13 @@ class HuggingFaceModelDownloader:
         Args:
             settings (AppSettings | None): The application settings. If None, defaults will be used.
         """
-        self.settings = settings or AppSettings()
-        if not self.settings.read_settings():
-            self.settings.save_settings()
+        self.settings = settings or read_settings()
+        if not self.settings:
+            self.settings = AppSettings()
+            save_settings(self.settings)
+            # Try reading again, if it fails again, we have no choice but to continue with defaults
             # FIXME: This also fixes a weird issue with the ollama_server.url having or not having a trailing slash
-            self.settings.read_settings()
+            self.settings = self.settings or read_settings()
         self.unnecessary_files: Set[str] = set()
 
     def _get_manifest_url(self, user_repo_quant: str) -> str:

@@ -3,7 +3,7 @@ import subprocess
 import sys
 
 from ollama_downloader.cli import app
-from ollama_downloader.data_models import AppSettings
+from ollama_downloader.utils import read_settings
 
 runner = CliRunner()
 
@@ -11,9 +11,9 @@ runner = CliRunner()
 def test_show_config():
     result = runner.invoke(app, ["show-config"])
     assert result.exit_code == 0
-    settings = AppSettings()
+    settings = read_settings()
     # Assert that we can read the local settings -- after all, this is what the show-config command does
-    assert settings.read_settings() is True
+    assert settings is not None
     # This is a bit fragile, as the indentation matching depends on the print_json implementation of Rich, which defaults to 2.
     assert settings.model_dump_json(indent=2) == result.output.strip()
 
