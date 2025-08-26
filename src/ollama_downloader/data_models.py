@@ -5,7 +5,7 @@ from pathlib import Path
 
 class OllamaServer(BaseModel):
     url: str = Field(
-        default="http://localhost:11434",
+        default="http://localhost:11434/",
         description="URL of the Ollama server.",
     )
     api_key: Optional[str] = Field(
@@ -32,7 +32,7 @@ class OllamaLibrary(BaseModel, validate_assignment=True):
         description="URL of the remote registry for Ollama models. If not provided, local storage will be used.",
     )
     library_base_url: Optional[str] = Field(
-        default="https://ollama.com/library",
+        default="https://ollama.com/library/",
         description="Base URL for the Ollama library. This is used to web scrape model metadata.",
     )
     verify_ssl: Optional[bool] = Field(
