@@ -1,4 +1,3 @@
-import os
 from pydantic import BaseModel, Field, HttpUrl, AfterValidator
 from typing import Optional, Tuple, Annotated
 
