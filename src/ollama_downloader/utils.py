@@ -9,64 +9,10 @@ import platform
 
 from environs import env
 from ollama_downloader.common import EnvVar
-from ollama_downloader.data.data_models import AppSettings
 
 logger = logging.getLogger(__name__)
 
 user_agent = f"{env.str(EnvVar.OD_UA_NAME_VER, default=EnvVar.DEFAULT__OD_UA_NAME_VER)} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
-
-CONF_DIR = env.str(EnvVar.OD_CONF_DIR, default=EnvVar.DEFAULT__OD_CONF_DIR)
-SETTINGS_FILE = os.path.join(
-    CONF_DIR, env.str(EnvVar.OD_SETTINGS_FILE, default=EnvVar.DEFAULT__OD_SETTINGS_FILE)
-)
-
-
-def read_settings(settings_file: str = SETTINGS_FILE) -> AppSettings:
-    """
-    Load settings from the configuration file.
-
-    Returns:
-        AppSettings: The application settings loaded from the configuration file.
-        If the file does not exist or cannot be parsed, returns None.
-    """
-    try:
-        with open(settings_file, "r") as f:
-            # Parse the JSON file into the AppSettings model
-            return_value = AppSettings.model_validate_json(f.read())
-        return return_value
-    except FileNotFoundError:
-        logger.error(
-            f"[bold red]Configuration file {settings_file} not found.[/bold red]"
-        )
-    except Exception as e:
-        logger.exception(
-            f"[bold red]Error loading settings from {settings_file}: {e}[/bold red]"
-        )
-    return None
-
-
-def save_settings(
-    settings: AppSettings,
-    config_dir: str = CONF_DIR,
-    settings_file: str = SETTINGS_FILE,
-) -> bool:
-    """
-    Save the application settings to the configuration file.
-
-    Returns:
-        bool: True if settings were saved successfully, False otherwise.
-    """
-    try:
-        os.makedirs(config_dir, exist_ok=True)
-        with open(settings_file, "w") as f:
-            f.write(settings.model_dump_json(indent=4))
-        logger.info(f"[bold green]Settings saved to {settings_file}[/bold green]")
-        return True
-    except Exception as e:
-        logger.exception(
-            f"[bold red]Error saving settings to {settings_file}: {e}[/bold red]"
-        )
-        return False
 
 
 def get_httpx_client(verify: bool, timeout: float) -> httpx.Client:

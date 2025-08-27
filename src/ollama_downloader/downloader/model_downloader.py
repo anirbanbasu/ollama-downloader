@@ -15,7 +15,7 @@ from environs import env
 from ollama_downloader.common import EnvVar
 from ollama_downloader.data.data_models import AppSettings, ImageManifest
 from ollama_downloader.downloader.downloader import Downloader
-from ollama_downloader.utils import get_httpx_client, read_settings, save_settings
+from ollama_downloader.utils import get_httpx_client
 import lxml.html
 from ollama import Client as OllamaClient
 
@@ -43,10 +43,9 @@ class OllamaModelDownloader(Downloader):
         Args:
             settings (AppSettings | None): The application settings. If None, defaults will be used.
         """
-        self.settings = settings or read_settings()
+        self.settings = settings or AppSettings.load_or_create_default()
         if not self.settings:
-            self.settings = AppSettings()
-            save_settings(self.settings)
+            raise RuntimeError("Failed to load or create and save default settings.")
         self.unnecessary_files: Set[str] = set()
         self.models_tags: Dict[str, list] = {}
         self.library_models: List[str] = []

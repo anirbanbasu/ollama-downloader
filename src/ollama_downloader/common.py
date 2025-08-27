@@ -15,8 +15,5 @@ class EnvVar(StrEnum):
     OD_UA_NAME_VER = auto()
     DEFAULT__OD_UA_NAME_VER = "ollama-downloader/0.1.0"
 
-    OD_CONF_DIR = auto()
-    DEFAULT__OD_CONF_DIR = "conf"
-
     OD_SETTINGS_FILE = auto()
-    DEFAULT__OD_SETTINGS_FILE = "settings.json"
+    DEFAULT__OD_SETTINGS_FILE = "conf/settings.json"

@@ -5,7 +5,7 @@ import pytest
 
 from ollama_downloader.cli import app
 from ollama_downloader.common import EnvVar
-from ollama_downloader.utils import read_settings
+from ollama_downloader.data.data_models import AppSettings
 
 
 class TestTyperCalls:
@@ -53,7 +53,7 @@ class TestTyperCalls:
         """
         result = runner.invoke(app=app, args=["show-config"])
         assert result.exit_code == 0
-        settings = read_settings()
+        settings = AppSettings.load_settings()
         # Assert that we can read the local settings -- after all, this is what the show-config command does
         assert settings is not None
         # This is a bit fragile, as the indentation matching depends on the print_json implementation of Rich, which defaults to 2.
