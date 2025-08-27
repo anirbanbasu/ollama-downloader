@@ -102,8 +102,7 @@ class OllamaDownloaderCLIApp:
             self._cleanup()
 
     async def _model_download(self, model_tag: str):
-        model, tag = model_tag.split(":") if ":" in model_tag else (model_tag, "latest")
-        self._model_downloader.download_model(model=model, tag=tag)
+        self._model_downloader.download_model(model_tag)
 
     async def run_model_download(self, model_tag: str):
         try:

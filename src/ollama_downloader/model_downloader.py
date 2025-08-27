@@ -286,9 +286,10 @@ class OllamaModelDownloader:
         self.unnecessary_files.add(target_file)
         return True, target_file
 
-    def download_model(self, model: str, tag: str = "latest") -> None:
+    def download_model(self, model_tag: str) -> None:
         # Implementation of the model downloading logic
         """Download a model from the Ollama server."""
+        model, tag = model_tag.split(":") if ":" in model_tag else (model_tag, "latest")
         # Validate the response as an ImageManifest but don't enforce strict validation
         manifest_json = self._fetch_manifest(model=model, tag=tag)
         logger.debug(f"Validating manifest for {model}:{tag}")
