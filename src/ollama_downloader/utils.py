@@ -1,3 +1,4 @@
+import logging
 import os
 import ssl
 from typing import Set
@@ -7,15 +8,16 @@ import httpx
 import platform
 
 from environs import env
-from ollama_downloader.common import logger
+from ollama_downloader.common import EnvVar
 from ollama_downloader.data_models import AppSettings
 
-UA_NAME_VER = env.str("OD_UA_NAME_VER", default="ollama-downloader/0.1.0")
-user_agent = f"{UA_NAME_VER} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
+logger = logging.getLogger(__name__)
 
-CONF_DIR = env.str("OD_CONF_DIR", default="conf")
+user_agent = f"{env.str(EnvVar.OD_UA_NAME_VER, default=EnvVar.DEFAULT__OD_UA_NAME_VER)} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
+
+CONF_DIR = env.str(EnvVar.OD_CONF_DIR, default=EnvVar.DEFAULT__OD_CONF_DIR)
 SETTINGS_FILE = os.path.join(
-    CONF_DIR, env.str("OD_SETTINGS_FILE", default="settings.json")
+    CONF_DIR, env.str(EnvVar.OD_SETTINGS_FILE, default=EnvVar.DEFAULT__OD_SETTINGS_FILE)
 )
 
 

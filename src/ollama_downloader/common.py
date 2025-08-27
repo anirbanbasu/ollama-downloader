@@ -1,9 +1,4 @@
-import logging
-import platform
-
-from rich.logging import RichHandler
-
-from environs import env
+from enum import StrEnum, auto
 
 try:
     from icecream import ic
@@ -12,15 +7,16 @@ try:
 except ImportError:  # Graceful fallback if IceCream isn't installed.
     ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
-logging.basicConfig(
-    format="%(message)s",
-    datefmt="[%X]",
-    handlers=[RichHandler(rich_tracebacks=False, markup=True)],
-)
 
-# Initialize the logger
-logger = logging.getLogger(__name__)
-logger.setLevel(env.str("LOG_LEVEL", default="INFO").upper())
+class EnvVar(StrEnum):
+    LOG_LEVEL = auto()
+    DEFAULT__LOG_LEVEL = "INFO"
 
-UA_NAME_VER = env.str("OD_UA_NAME_VER", default="ollama-downloader/0.1.0")
-user_agent = f"{UA_NAME_VER} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
+    OD_UA_NAME_VER = auto()
+    DEFAULT__OD_UA_NAME_VER = "ollama-downloader/0.1.0"
+
+    OD_CONF_DIR = auto()
+    DEFAULT__OD_CONF_DIR = "conf"
+
+    OD_SETTINGS_FILE = auto()
+    DEFAULT__OD_SETTINGS_FILE = "settings.json"

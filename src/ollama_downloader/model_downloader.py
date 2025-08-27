@@ -1,6 +1,7 @@
 import datetime
 import hashlib
 import json
+import logging
 import os
 import shutil
 import tempfile
@@ -9,12 +10,16 @@ from urllib.parse import urlparse
 
 from httpx import URL
 
+from environs import env
+
+from ollama_downloader.common import EnvVar
 from ollama_downloader.data_models import AppSettings, ImageManifest
-from ollama_downloader.common import logger
 from ollama_downloader.utils import get_httpx_client, read_settings, save_settings
 import lxml.html
 from ollama import Client as OllamaClient
 
+
+from rich import print as print
 from rich.progress import (
     Progress,
     BarColumn,
@@ -23,6 +28,10 @@ from rich.progress import (
     TransferSpeedColumn,
     MofNCompleteColumn,
 )
+
+# Initialize the logger
+logger = logging.getLogger(__name__)
+logger.setLevel(env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upper())
 
 
 class OllamaModelDownloader:
@@ -319,7 +328,9 @@ class OllamaModelDownloader:
                 computed_digest=computed_digest,
             )
             if copy_status is False:
-                logger.error(f"Failed to copy {named_digest} to {copy_destination}.")
+                raise RuntimeError(
+                    f"Failed to copy {named_digest} to {copy_destination}."
+                )
         # Finally, save the manifest to its appropriate destination
         self._save_manifest_to_destination(
             data=manifest_json,
@@ -351,8 +362,8 @@ class OllamaModelDownloader:
                 found_model = model_info
                 break
         if found_model:
-            logger.info(
-                f"[green]Model [bold]{found_model.model}[/bold] successfully downloaded and saved on {found_model.modified_at:%B %d %Y at %H:%M:%S}.[/green]"
+            print(
+                f"Model {found_model.model} successfully downloaded and saved on {found_model.modified_at:%B %d %Y at %H:%M:%S}."
             )
         else:
             raise RuntimeError(
