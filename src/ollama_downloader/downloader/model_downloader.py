@@ -13,7 +13,8 @@ from httpx import URL
 from environs import env
 
 from ollama_downloader.common import EnvVar
-from ollama_downloader.data_models import AppSettings, ImageManifest
+from ollama_downloader.data.data_models import AppSettings, ImageManifest
+from ollama_downloader.downloader.downloader import Downloader
 from ollama_downloader.utils import get_httpx_client, read_settings, save_settings
 import lxml.html
 from ollama import Client as OllamaClient
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upper())
 
 
-class OllamaModelDownloader:
+class OllamaModelDownloader(Downloader):
     def __init__(self, settings: AppSettings | None = None):
         """
         Initialize the model downloader with application settings.
@@ -286,10 +287,12 @@ class OllamaModelDownloader:
         self.unnecessary_files.add(target_file)
         return True, target_file
 
-    def download_model(self, model_tag: str) -> None:
-        # Implementation of the model downloading logic
-        """Download a model from the Ollama server."""
-        model, tag = model_tag.split(":") if ":" in model_tag else (model_tag, "latest")
+    def download_model(self, model_identifier: str) -> None:
+        model, tag = (
+            model_identifier.split(":")
+            if ":" in model_identifier
+            else (model_identifier, "latest")
+        )
         # Validate the response as an ImageManifest but don't enforce strict validation
         manifest_json = self._fetch_manifest(model=model, tag=tag)
         logger.debug(f"Validating manifest for {model}:{tag}")

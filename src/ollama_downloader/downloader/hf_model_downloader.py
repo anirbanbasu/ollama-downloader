@@ -9,7 +9,8 @@ from typing import List, Set, Tuple
 from environs import env
 
 from ollama_downloader.common import EnvVar
-from ollama_downloader.data_models import AppSettings, ImageManifest
+from ollama_downloader.data.data_models import AppSettings, ImageManifest
+from ollama_downloader.downloader.downloader import Downloader
 from ollama_downloader.utils import get_httpx_client, read_settings, save_settings
 
 # import lxml.html
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upper())
 
 
-class HuggingFaceModelDownloader:
+class HuggingFaceModelDownloader(Downloader):
     HF_BASE_HOST = "hf.co"
     HF_BASE_URL = f"https://{HF_BASE_HOST}/v2/"
 
@@ -247,17 +248,10 @@ class HuggingFaceModelDownloader:
         self.unnecessary_files.add(target_file)
         return True, target_file
 
-    def download_model(self, user_repo_quant: str) -> None:
-        # Implementation of the model downloading logic
-        """
-        Download a model from the Ollama server.
-
-        Args:
-            user_repo_quant (str): The model identifier in the format "username/repository:quantisation".
-        """
+    def download_model(self, model_identifier: str) -> None:
         # Validate the response as an ImageManifest but don't enforce strict validation
-        manifest_json = self._fetch_manifest(user_repo_quant=user_repo_quant)
-        logger.debug(f"Validating manifest for {user_repo_quant}")
+        manifest_json = self._fetch_manifest(user_repo_quant=model_identifier)
+        logger.debug(f"Validating manifest for {model_identifier}")
         manifest = ImageManifest.model_validate_json(manifest_json, strict=False)
         logger.info(
             f"Downloading model configuration [bold cyan]{manifest.config.digest}[/bold cyan]"
@@ -268,7 +262,7 @@ class HuggingFaceModelDownloader:
         files_to_be_copied: List[Tuple[str, str, str]] = []
         # Download the model configuration BLOB
         file_model_config, digest_model_config = self._download_model_blob(
-            user_repo_quant=user_repo_quant,
+            user_repo_quant=model_identifier,
             named_digest=manifest.config.digest,
         )
         files_to_be_copied.append(
@@ -282,7 +276,7 @@ class HuggingFaceModelDownloader:
                 f"Downloading [bold cyan]{layer.mediaType}[/bold cyan] layer [bold cyan]{layer.digest}[/bold cyan]"
             )
             file_layer, digest_layer = self._download_model_blob(
-                user_repo_quant=user_repo_quant,
+                user_repo_quant=model_identifier,
                 named_digest=layer.digest,
             )
             files_to_be_copied.append((file_layer, layer.digest, digest_layer))
@@ -300,7 +294,7 @@ class HuggingFaceModelDownloader:
         # Finally, save the manifest to its appropriate destination
         self._save_manifest_to_destination(
             data=manifest_json,
-            user_repo_quant=user_repo_quant,
+            user_repo_quant=model_identifier,
         )
         ts_approximate_manifest_save = datetime.datetime.now()
         # Finally check if it exists in the Ollama
@@ -314,7 +308,7 @@ class HuggingFaceModelDownloader:
         )
         models_list = ollama_client.list()
         found_model = None
-        search_model = f"{HuggingFaceModelDownloader.HF_BASE_HOST}/{user_repo_quant}"
+        search_model = f"{HuggingFaceModelDownloader.HF_BASE_HOST}/{model_identifier}"
         for model_info in models_list.models:
             if (
                 model_info.model == search_model

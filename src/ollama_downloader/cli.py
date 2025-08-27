@@ -11,8 +11,8 @@ from rich import print_json
 from environs import env
 from ollama_downloader.common import EnvVar
 from ollama_downloader.utils import cleanup_unnecessary_files
-from ollama_downloader.model_downloader import OllamaModelDownloader
-from ollama_downloader.hf_model_downloader import HuggingFaceModelDownloader
+from ollama_downloader.downloader.model_downloader import OllamaModelDownloader
+from ollama_downloader.downloader.hf_model_downloader import HuggingFaceModelDownloader
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
@@ -114,7 +114,7 @@ class OllamaDownloaderCLIApp:
             self._cleanup()
 
     async def _hf_model_download(self, user_repo_quant: str):
-        self._hf_model_downloader.download_model(user_repo_quant=user_repo_quant)
+        self._hf_model_downloader.download_model(model_identifier=user_repo_quant)
 
     async def run_hf_model_download(self, user_repo_quant: str):
         try:

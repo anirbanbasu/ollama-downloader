@@ -9,7 +9,7 @@ import platform
 
 from environs import env
 from ollama_downloader.common import EnvVar
-from ollama_downloader.data_models import AppSettings
+from ollama_downloader.data.data_models import AppSettings
 
 logger = logging.getLogger(__name__)
 
