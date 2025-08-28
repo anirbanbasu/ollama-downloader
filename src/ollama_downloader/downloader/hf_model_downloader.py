@@ -4,14 +4,13 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import List, Set, Tuple
+from typing import List, Tuple
 
 from environs import env
 
 from ollama_downloader.common import EnvVar
 from ollama_downloader.data.data_models import AppSettings, ImageManifest
 from ollama_downloader.downloader.downloader import Downloader
-from ollama_downloader.utils import get_httpx_client
 
 # import lxml.html
 from ollama import Client as OllamaClient
@@ -22,7 +21,6 @@ from rich.progress import (
     TextColumn,
     DownloadColumn,
     TransferSpeedColumn,
-    # MofNCompleteColumn,
 )
 
 # Initialize the logger
@@ -44,7 +42,6 @@ class HuggingFaceModelDownloader(Downloader):
         self.settings = settings or AppSettings.load_or_create_default()
         if not self.settings:
             raise RuntimeError("Failed to load or create and save default settings.")
-        self.unnecessary_files: Set[str] = set()
 
     def _get_manifest_url(self, user_repo_quant: str) -> str:
         """
@@ -89,7 +86,7 @@ class HuggingFaceModelDownloader(Downloader):
         logger.info(
             f"Downloading manifest for [bold cyan]{user_repo_quant}[/bold cyan]"
         )
-        with get_httpx_client(
+        with self.get_httpx_client(
             self.settings.ollama_library.verify_ssl,
             self.settings.ollama_library.timeout,
         ) as http_client:
@@ -112,8 +109,8 @@ class HuggingFaceModelDownloader(Downloader):
         # try:
         sha256_hash = hashlib.new("sha256")
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            self.unnecessary_files.add(temp_file.name)
-            with get_httpx_client(
+            self._unnecessary_files.add(temp_file.name)
+            with self.get_httpx_client(
                 self.settings.ollama_library.verify_ssl,
                 self.settings.ollama_library.timeout,
             ).stream("GET", url) as response:
@@ -176,7 +173,7 @@ class HuggingFaceModelDownloader(Downloader):
                 f"Manifests path {manifests_dir} does not exist. Will attempt to create it."
             )
             os.makedirs(manifests_dir)
-            self.unnecessary_files.add(manifests_dir)
+            self._unnecessary_files.add(manifests_dir)
         target_file = os.path.join(manifests_dir, org_repo_model_splits[1])
         with open(target_file, "w") as f:
             f.write(data)
@@ -191,7 +188,7 @@ class HuggingFaceModelDownloader(Downloader):
             logger.info(
                 f"Changed ownership of {target_file} to user: {user}, group: {group}"
             )
-        self.unnecessary_files.add(target_file)
+        self._unnecessary_files.add(target_file)
         return target_file
 
     def _copy_blob_to_destination(
@@ -243,8 +240,8 @@ class HuggingFaceModelDownloader(Downloader):
             logger.info(
                 f"Changed ownership of {target_file} to user: {user}, group: {group}"
             )
-        self.unnecessary_files.remove(source)
-        self.unnecessary_files.add(target_file)
+        self._unnecessary_files.remove(source)
+        self._unnecessary_files.add(target_file)
         return True, target_file
 
     def download_model(self, model_identifier: str) -> None:
@@ -299,7 +296,7 @@ class HuggingFaceModelDownloader(Downloader):
         # Finally check if it exists in the Ollama
         # Clear the list of unnecessary files before this if errors henceforth are to be tolerated.
         if not self.settings.ollama_server.remove_downloaded_on_error:
-            self.unnecessary_files.clear()
+            self._unnecessary_files.clear()
         ollama_client = OllamaClient(
             host=self.settings.ollama_server.url,
             # timeout=self.settings.ollama_server.timeout,
@@ -329,4 +326,4 @@ class HuggingFaceModelDownloader(Downloader):
                 f"Model {search_model} could not be found in Ollama server after download."
             )
         # If we reached here cleanly, remove all unnecessary file names but don't remove actual files.
-        self.unnecessary_files.clear()
+        self._unnecessary_files.clear()

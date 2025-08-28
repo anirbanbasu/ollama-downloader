@@ -1,4 +1,4 @@
-from enum import StrEnum, auto
+from enum import Enum, auto
 
 try:
     from icecream import ic
@@ -8,7 +8,14 @@ except ImportError:  # Graceful fallback if IceCream isn't installed.
     ic = lambda *a: None if not a else (a[0] if len(a) == 1 else a)  # noqa
 
 
-class EnvVar(StrEnum):
+class AllCapsStrEnum(str, Enum):
+    # See https://github.com/python/cpython/issues/115509#issuecomment-1946971056
+    @staticmethod
+    def _generate_next_value_(name, *args):
+        return name.upper()
+
+
+class EnvVar(AllCapsStrEnum):
     LOG_LEVEL = auto()
     DEFAULT__LOG_LEVEL = "INFO"
 

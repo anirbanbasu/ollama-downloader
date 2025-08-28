@@ -1,7 +1,7 @@
 import logging
 import os
 from pydantic import BaseModel, Field
-from typing import Any, ClassVar, Optional, Self, Tuple
+from typing import ClassVar, Optional, Self, Tuple
 
 from environs import env
 
@@ -68,7 +68,7 @@ class AppSettings(BaseModel):
 
     _instance: ClassVar[Self | None] = None
 
-    def __new__(cls: type[Self], *args: Any, **kwargs: Any) -> Self:
+    def __new__(cls: type["AppSettings"]) -> "AppSettings":
         if cls._instance is None:
             # Create instance using super().__new__ to bypass any recursion
             instance = super().__new__(cls)
@@ -78,7 +78,7 @@ class AppSettings(BaseModel):
     @staticmethod
     def load_or_create_default(
         settings_file: str = EnvVar.DEFAULT__OD_SETTINGS_FILE,
-    ) -> "AppSettings" | None:
+    ) -> "AppSettings | None":
         """
         Load settings from the configuration file, or create default settings if the file does not exist.
 
@@ -99,7 +99,7 @@ class AppSettings(BaseModel):
         settings_file: str = env.str(
             EnvVar.OD_SETTINGS_FILE, default=EnvVar.DEFAULT__OD_SETTINGS_FILE
         ),
-    ) -> "AppSettings" | None:
+    ) -> "AppSettings | None":
         """
         Load settings from the configuration file.
 

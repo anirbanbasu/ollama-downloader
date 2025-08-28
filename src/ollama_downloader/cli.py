@@ -8,15 +8,11 @@ import typer
 from rich import print as print
 from rich import print_json
 
-from environs import env
-from ollama_downloader.common import EnvVar
-from ollama_downloader.utils import cleanup_unnecessary_files
 from ollama_downloader.downloader.model_downloader import OllamaModelDownloader
 from ollama_downloader.downloader.hf_model_downloader import HuggingFaceModelDownloader
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
-logger.setLevel(env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upper())
 
 # Initialize the Typer application
 app = typer.Typer(
@@ -29,7 +25,6 @@ app = typer.Typer(
 class OllamaDownloaderCLIApp:
     def __init__(self):
         # Set up signal handlers for graceful shutdown
-        self._cleaned = False
         for sig in [signal.SIGINT, signal.SIGTERM]:
             signal.signal(sig, self._interrupt_handler)
 
@@ -38,8 +33,9 @@ class OllamaDownloaderCLIApp:
             typer.echo(f"Interrupt signal received at {frame}, performing cleanup...")
         else:
             typer.echo("Interrupt signal received, performing cleanup...")
-        self._cleanup()
-        typer.echo(f"Cleanup finished. Exiting {OllamaDownloaderCLIApp.__name__}.")
+        # Cleanup will be performed due to the finally block in each command
+        # self._cleanup()
+        typer.echo(f"Exiting {OllamaDownloaderCLIApp.__name__}.")
         sys.exit(0)
 
     def _initialize(self):
@@ -48,15 +44,14 @@ class OllamaDownloaderCLIApp:
         self._hf_model_downloader = HuggingFaceModelDownloader()
 
     def _cleanup(self):
-        if not self._cleaned:
-            logger.debug("Running cleanup...")
-            if self._model_downloader:
-                cleanup_unnecessary_files(self._model_downloader.unnecessary_files)
-            if self._hf_model_downloader:
-                cleanup_unnecessary_files(self._hf_model_downloader.unnecessary_files)
-            self._cleaned = True
-        else:
-            logger.debug("Cleanup already executed.")
+        logger.info("Running cleanup...")
+
+        if self._model_downloader:
+            self._model_downloader.cleanup_unnecessary_files()
+        if self._hf_model_downloader:
+            self._hf_model_downloader.cleanup_unnecessary_files()
+
+        logger.info("Cleanup completed.")
 
     async def _show_config(self):
         return self._model_downloader.settings.model_dump_json()
