@@ -7,8 +7,10 @@ import platform
 import shutil
 import ssl
 import tempfile
-from typing import Set, Tuple
+from typing import List, Set, Tuple
 from urllib.parse import urlparse
+
+from ollama import Client as OllamaClient
 
 import certifi
 import httpx
@@ -58,6 +60,31 @@ class ModelDownloader(ABC):
 
         Returns:
             bool: True if the model was successfully downloaded and verified, False otherwise.
+        """
+        pass
+
+    @abstractmethod
+    def list_available_models(self) -> List[str]:
+        """
+        List available models.
+
+        Returns:
+            list[str]: A list of available model identifiers, excluding any of their tags.
+        """
+        pass
+
+    @abstractmethod
+    def list_model_tags(self, model_identifier: str) -> List[str]:
+        """
+        List available tags for a specific model.
+
+        Args:
+            model_identifier (str): The name of the model to list tags for, e.g., "gpt-oss" for an Ollama library model
+            or "unsloth/gemma-3-270m-it-GGUF" for a Hugging Face model.
+
+        Returns:
+            list[str]: A list of available tags for the specified model, e.g., ["latest", "20b"] or
+            the Hugging Face quantisations such as ["Q4_K_M", "Q4_K_S"].
         """
         pass
 
@@ -386,3 +413,27 @@ class ModelDownloader(ABC):
                         f"Failed to remove unnecessary directory {directory}: {e}"
                     )
             self._cleanup_running = False
+
+    def remove_model(self, model_identifier: str) -> bool:
+        """
+        Removes a model from the Ollama server.
+        """
+        ollama_client = OllamaClient(
+            host=self.settings.ollama_server.url,
+            # timeout=self.settings.ollama_server.timeout,
+            # TODO: Add API key authentication logic
+        )
+        search_model = (
+            f"{urlparse(ModelDownloader.HF_BASE_URL).hostname}/{model_identifier}"
+        )
+        response = ollama_client.delete(search_model)
+        if hasattr(response, "status") and response.status == "success":
+            logger.info(
+                f"Successfully removed model {model_identifier} from Ollama server at {self.settings.ollama_server.url}."
+            )
+            return True
+        else:
+            logger.error(
+                f"Failed to remove model {model_identifier} from Ollama server at {self.settings.ollama_server.url}."
+            )
+            return False

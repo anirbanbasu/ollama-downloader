@@ -11,7 +11,8 @@ from ollama_downloader.downloader.model_downloader import ModelDownloader, Model
 
 # import lxml.html
 from ollama import Client as OllamaClient
-
+from huggingface_hub import HfApi
+from ollama_downloader import ic
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
@@ -116,3 +117,28 @@ class HuggingFaceModelDownloader(ModelDownloader):
         # If we reached here cleanly, remove all unnecessary file names but don't remove actual files.
         self._unnecessary_files.clear()
         return found_model
+
+    def list_available_models(self) -> List[str]:
+        raise NotImplementedError(
+            "Listing models from Hugging Face while filtering by supported applications, e.g., Ollama is not implemented yet. Follow issue 3319: https://github.com/huggingface/huggingface_hub/issues/3319"
+        )
+
+    def list_model_tags(self, model_identifier: str) -> List[str]:
+        hf_api = HfApi()
+        model_info = hf_api.model_info(repo_id=model_identifier, files_metadata=True)
+        ic(model_info)
+        tags = []
+        for repo_sibling in model_info.siblings:
+            if repo_sibling.rfilename.endswith(".gguf"):
+                # Try to extract the quantisation from the filename
+                tag = repo_sibling.rfilename.split(".gguf")[0].split("-")[-1]
+                tags.append(f"{model_identifier}:{tag}")
+        if len(tags) == 0:
+            # If no .gguf files found, the model is not supported for Ollama
+            raise RuntimeError(
+                f"The model {model_identifier} does not support downloading into Ollama."
+            )
+        logger.warning(
+            "The current method of listing tags is experimental and may be inaccurate."
+        )
+        return tags

@@ -1,8 +1,6 @@
 import datetime
-import json
 import logging
-import os
-from typing import Dict, List, Set, Tuple
+from typing import List, Set, Tuple
 
 from httpx import URL
 
@@ -16,12 +14,6 @@ from ollama import Client as OllamaClient
 
 
 from rich import print as print
-from rich.progress import (
-    Progress,
-    BarColumn,
-    TextColumn,
-    MofNCompleteColumn,
-)
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
@@ -31,36 +23,6 @@ logger.setLevel(env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upp
 class OllamaModelDownloader(ModelDownloader):
     def __init__(self):
         super().__init__()
-        self.models_tags: Dict[str, list] = {}
-        self.library_models: List[str] = []
-
-    def _save_models_tags_cache(
-        self,
-    ) -> None:
-        """
-        Save the models tags cache to a file.
-        """
-        if hasattr(self, "models_tags"):
-            with open(self.settings.ollama_library.models_tags_cache, "w") as f:
-                f.write(json.dumps(self.models_tags, indent=2))
-        else:
-            logger.warning("No models tags cache to save.")
-
-    def load_models_tags_cache(self) -> None:
-        """
-        Load the models tags cache from a file.
-        """
-        if os.path.exists(self.settings.ollama_library.models_tags_cache):
-            with open(self.settings.ollama_library.models_tags_cache, "r") as f:
-                self.models_tags = json.loads(f.read())
-            logger.info(
-                f"Loaded models tags cache from {self.settings.ollama_library.models_tags_cache}"
-            )
-            self.library_models = list(self.models_tags.keys())
-        else:
-            logger.warning(
-                f"No models tags cache found at {self.settings.ollama_library.models_tags_cache}"
-            )
 
     def download_model(self, model_identifier: str) -> bool:
         model, tag = (
@@ -154,13 +116,7 @@ class OllamaModelDownloader(ModelDownloader):
         # Finally return success
         return True
 
-    def update_models_list(self) -> list:
-        """
-        Update the list of models available in the Ollama library.
-
-        Returns:
-            list: A list of model names available in the Ollama library.
-        """
+    def list_available_models(self) -> List[str]:
         with self.get_httpx_client(
             verify=self.settings.ollama_library.verify_ssl,
             timeout=self.settings.ollama_library.timeout,
@@ -171,104 +127,44 @@ class OllamaModelDownloader(ModelDownloader):
             models_response = client.get(self.settings.ollama_library.library_base_url)
             models_response.raise_for_status()
             parsed_models_html = lxml.html.document_fromstring(models_response.text)
-            self.library_models = []
+            available_models = []
             library_prefix = "/library/"
             for _, attribute, link, _ in lxml.html.iterlinks(parsed_models_html):
                 if attribute == "href" and link.startswith(library_prefix):
-                    self.library_models.append(link.replace(library_prefix, ""))
-            logger.debug(
-                f"Found {len(self.library_models)} models in the Ollama library."
-            )
-            return self.library_models
+                    available_models.append(link.replace(library_prefix, ""))
+            logger.debug(f"Found {len(available_models)} models in the Ollama library.")
+            return available_models
 
-    def list_models_tags(
-        self, model: str | None = None, update: bool = False
-    ) -> dict[str, list]:
-        """
-        Update the tags for each model or a named model in the Ollama library.
-
-        Returns:
-            dict[str, list]: A dictionary where keys are model names and values are lists of tags.
-        """
-        self.load_models_tags_cache()
-        if not hasattr(self, "library_models") or update:
-            self.update_models_list()
-        _base_url = URL(self.settings.ollama_library.library_base_url)
+    def list_model_tags(self, model_identifier: str) -> List[str]:
+        available_models = self.list_available_models()
         with self.get_httpx_client(
             verify=self.settings.ollama_library.verify_ssl,
             timeout=self.settings.ollama_library.timeout,
         ) as client:
-            if model is not None:
-                if model not in self.library_models:
-                    logger.error(f"Model {model} not found in the library models list.")
-                    return {}
-                else:
-                    if not hasattr(self, "models_tags") or update:
-                        logger.debug(
-                            f"Fetching tags for model {model} from the Ollama library."
-                        )
-                        tags_response = client.get(_base_url.join(f"{model}/tags"))
-                        tags_response.raise_for_status()
-                        logger.debug(f"Parsing tags for model {model}.")
-                        parsed_tags_html = lxml.html.document_fromstring(
-                            tags_response.text
-                        )
-                        library_prefix = "/library/"
-                        named_model_unique_tags: Set[str] = set()
-                        for _, attribute, link, _ in lxml.html.iterlinks(
-                            parsed_tags_html
-                        ):
-                            if attribute == "href" and link.startswith(
-                                f"{library_prefix}{model}:"
-                            ):
-                                if model not in self.models_tags:
-                                    self.models_tags[model] = []
-                                named_model_unique_tags.add(
-                                    link.replace(library_prefix, "")
-                                )
-                        self.models_tags[model] = list(named_model_unique_tags)
-                        logger.debug(f"Updating tags for model {model} in the cache.")
-                        self._save_models_tags_cache()
-                    return {model: self.models_tags.get(model, [])}
+            models_tags = []
+            if model_identifier not in available_models:
+                raise RuntimeError(
+                    f"Model {model_identifier} not found in the library models list."
+                )
             else:
-                if (
-                    not hasattr(self, "models_tags")
-                    or update
-                    or len(self.models_tags) == 0
-                ):
-                    # A full update has been requested
-                    model_counter = 0
-                    with Progress(
-                        TextColumn(text_format="{task.description}"),
-                        "[progress.percentage]{task.percentage:>3.0f}%",
-                        BarColumn(bar_width=None),
-                        MofNCompleteColumn(),
-                    ) as progress:
-                        tags_task = progress.add_task(
-                            "Updating models",
-                            total=len(self.library_models),
-                        )
-                        for m in self.library_models:
-                            tags_response = client.get(_base_url.join(f"{m}/tags"))
-                            tags_response.raise_for_status()
-                            parsed_tags_html = lxml.html.document_fromstring(
-                                tags_response.text
-                            )
-                            model_unique_tags: Set[str] = set()
-                            for _, attribute, link, _ in lxml.html.iterlinks(
-                                parsed_tags_html
-                            ):
-                                if attribute == "href" and link.startswith(
-                                    f"/library/{m}:"
-                                ):
-                                    if m not in self.models_tags:
-                                        self.models_tags[m] = []
-                                    model_unique_tags.add(link.replace("/library/", ""))
-                            self.models_tags[m] = list(model_unique_tags)
-                            model_counter += 1
-                            progress.update(tags_task, completed=model_counter)
-                    logger.info(
-                        f"Updated {len(self.models_tags)} models with tags from the Ollama library."
+                logger.debug(
+                    f"Fetching tags for model {model_identifier} from the Ollama library."
+                )
+                tags_response = client.get(
+                    URL(self.settings.ollama_library.library_base_url).join(
+                        f"{model_identifier}/tags"
                     )
-                    self._save_models_tags_cache()
-                return self.models_tags
+                )
+                tags_response.raise_for_status()
+                logger.debug(f"Parsing tags for model {model_identifier}.")
+                parsed_tags_html = lxml.html.document_fromstring(tags_response.text)
+                library_prefix = "/library/"
+                named_model_unique_tags: Set[str] = set()
+                for _, attribute, link, _ in lxml.html.iterlinks(parsed_tags_html):
+                    if attribute == "href" and link.startswith(
+                        f"{library_prefix}{model_identifier}:"
+                    ):
+                        named_model_unique_tags.add(link.replace(library_prefix, ""))
+                models_tags = list(named_model_unique_tags)
+
+            return models_tags

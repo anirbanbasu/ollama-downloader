@@ -64,7 +64,7 @@ class OllamaDownloaderCLIApp:
             self._cleanup()
 
     async def _list_models(self):
-        return self._model_downloader.update_models_list()
+        return self._model_downloader.list_available_models()
 
     async def run_list_models(self):
         try:
@@ -76,17 +76,14 @@ class OllamaDownloaderCLIApp:
         finally:
             self._cleanup()
 
-    async def _list_tags(self, model: str | None, update: bool = False):
-        return self._model_downloader.list_models_tags(model=model, update=update)
+    async def _list_tags(self, model_identifier: str):
+        return self._model_downloader.list_model_tags(model_identifier=model_identifier)
 
-    async def run_list_tags(self, model: str | None, update: bool = False):
+    async def run_list_tags(self, model_identifier: str):
         try:
             self._initialize()
-            result = await self._list_tags(model=model, update=update)
-            for model_name, tags in result.items():
-                print(f"Model: {model_name}")
-                if tags:
-                    print(f"\tTags: ({len(tags)}): {tags}")
+            result = await self._list_tags(model_identifier=model_identifier)
+            print(f"Model tags: ({len(result)}): {result}")
         except Exception as e:
             logger.error(f"Error in listing model tags. {e}")
         finally:
@@ -101,6 +98,34 @@ class OllamaDownloaderCLIApp:
             await self._model_download(model_tag=model_tag)
         except Exception as e:
             logger.error(f"Error in downloading model. {e}")
+        finally:
+            self._cleanup()
+
+    async def _hf_list_models(self):
+        return self._hf_model_downloader.list_available_models()
+
+    async def run_hf_list_models(self):
+        try:
+            self._initialize()
+            result = await self._hf_list_models()
+            typer.echo(result)
+        except Exception as e:
+            logger.error(f"Error in listing models. {e}")
+        finally:
+            self._cleanup()
+
+    async def _hf_list_tags(self, model_identifier: str):
+        return self._hf_model_downloader.list_model_tags(
+            model_identifier=model_identifier
+        )
+
+    async def run_hf_list_tags(self, model_identifier: str):
+        try:
+            self._initialize()
+            result = await self._hf_list_tags(model_identifier=model_identifier)
+            print(f"Model tags: ({len(result)}): {result}")
+        except Exception as e:
+            logger.error(f"Error in listing model tags. {e}")
         finally:
             self._cleanup()
 
@@ -133,22 +158,14 @@ def list_models():
 
 @app.command()
 def list_tags(
-    model: Annotated[
-        str | None,
-        typer.Argument(
-            help="The name of the model to list tags for, e.g., llama3.1. If not provided, tags of all models will be listed."
-        ),
-    ] = None,
-    update: Annotated[
-        bool,
-        typer.Option(
-            help="Force update the model list and its tags before listing.",
-        ),
-    ] = False,
+    model_identifier: Annotated[
+        str,
+        typer.Argument(help="The name of the model to list tags for, e.g., llama3.1."),
+    ],
 ):
     """Lists all tags for a specific model."""
     app_handler = OllamaDownloaderCLIApp()
-    asyncio.run(app_handler.run_list_tags(model=model, update=update))
+    asyncio.run(app_handler.run_list_tags(model_identifier=model_identifier))
 
 
 @app.command()
@@ -163,6 +180,30 @@ def model_download(
     """Downloads a specific Ollama model with the given tag."""
     app_handler = OllamaDownloaderCLIApp()
     asyncio.run(app_handler.run_model_download(model_tag=model_tag))
+
+
+@app.command()
+def hf_list_models():
+    """Lists all available models from Hugging Face that can be downloaded into Ollama."""
+    app_handler = OllamaDownloaderCLIApp()
+    asyncio.run(app_handler.run_hf_list_models())
+
+
+@app.command()
+def hf_list_tags(
+    model_identifier: Annotated[
+        str,
+        typer.Argument(
+            help="The name of the model to list tags for, e.g., bartowski/Llama-3.2-1B-Instruct-GGUF."
+        ),
+    ],
+):
+    """
+    Lists all available quantisations as tags for a Hugging Face model that can be downloaded into Ollama.
+    Note that these are NOT the same as Hugging Face model tags.
+    """
+    app_handler = OllamaDownloaderCLIApp()
+    asyncio.run(app_handler.run_hf_list_tags(model_identifier=model_identifier))
 
 
 @app.command()

@@ -30,10 +30,6 @@ class OllamaLibrary(BaseModel):
         default="~/.ollama/models",
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
     )
-    models_tags_cache: str = Field(
-        default="models_tags.json",
-        description="Path to the cache file for model tags. This file is used to store the tags of models to avoid repeated requests to the Ollama server.",
-    )
     registry_base_url: Optional[str] = Field(
         default="https://registry.ollama.ai/v2/library/",
         description="URL of the remote registry for Ollama models. If not provided, local storage will be used.",
