@@ -1,12 +1,13 @@
 import datetime
 import logging
 from typing import List, Tuple
+from urllib.parse import urlparse
 
 from environs import env
 
 from ollama_downloader.common import EnvVar
 from ollama_downloader.data.data_models import ImageManifest
-from ollama_downloader.downloader.downloader import Downloader, ModelSource
+from ollama_downloader.downloader.model_downloader import ModelDownloader, ModelSource
 
 # import lxml.html
 from ollama import Client as OllamaClient
@@ -17,26 +18,30 @@ logger = logging.getLogger(__name__)
 logger.setLevel(env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upper())
 
 
-class HuggingFaceModelDownloader(Downloader):
+class HuggingFaceModelDownloader(ModelDownloader):
     def __init__(self):
         super().__init__()
 
     def download_model(self, model_identifier: str) -> bool:
         # Validate the response as an ImageManifest but don't enforce strict validation
-        print(f"Downloading Hugging Face model {model_identifier}")
+        (user, model_repo), quant = (
+            model_identifier.split(":")[0].split("/"),
+            model_identifier.split(":")[1],
+        )
+        print(
+            f"Downloading Hugging Face model {model_repo} from {user} with {quant} quantisation"
+        )
         manifest_json = self._fetch_manifest(
             model_identifier=model_identifier, model_source=ModelSource.HUGGINGFACE
         )
-        logger.debug(f"Validating manifest for {model_identifier}")
-        manifest = ImageManifest.model_validate_json(manifest_json, strict=False)
-        logger.info(
-            f"Downloading model configuration [bold cyan]{manifest.config.digest}[/bold cyan]"
-        )
+        logger.info(f"Validating manifest for {model_identifier}")
+        manifest = ImageManifest.model_validate_json(manifest_json, strict=True)
         # Keep a list of files to be copied but only copy after all downloads have completed successfully.
         # This is to ensure that we don't copy files that may not be needed if the download fails.
         # Each tuple in the list contains (source_path, named_digest, computed_digest).
         files_to_be_copied: List[Tuple[str, str, str]] = []
         # Download the model configuration BLOB
+        logger.info(f"Downloading model configuration {manifest.config.digest}")
         file_model_config, digest_model_config = self._download_model_blob(
             model_identifier=model_identifier,
             named_digest=manifest.config.digest,
@@ -47,11 +52,9 @@ class HuggingFaceModelDownloader(Downloader):
         )
         for layer in manifest.layers:
             logger.debug(
-                f"Layer: [bold cyan]{layer.mediaType}[/bold cyan], Size: [bold green]{layer.size}[/bold green] bytes, Digest: [bold yellow]{layer.digest}[/bold yellow]"
+                f"Layer: {layer.mediaType}, Size: {layer.size} bytes, Digest: {layer.digest}"
             )
-            logger.info(
-                f"Downloading [bold cyan]{layer.mediaType}[/bold cyan] layer [bold cyan]{layer.digest}[/bold cyan]"
-            )
+            logger.info(f"Downloading {layer.mediaType} layer {layer.digest}")
             file_layer, digest_layer = self._download_model_blob(
                 model_identifier=model_identifier,
                 named_digest=layer.digest,
@@ -87,7 +90,9 @@ class HuggingFaceModelDownloader(Downloader):
         )
         models_list = ollama_client.list()
         found_model = None
-        search_model = f"{HuggingFaceModelDownloader.HF_BASE_HOST}/{model_identifier}"
+        search_model = (
+            f"{urlparse(ModelDownloader.HF_BASE_URL).hostname}/{model_identifier}"
+        )
         for model_info in models_list.models:
             if (
                 model_info.model == search_model

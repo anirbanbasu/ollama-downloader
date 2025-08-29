@@ -8,5 +8,9 @@ logging.basicConfig(
     level=env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upper(),
     format="%(message)s",
     datefmt="[%X]",
-    handlers=[RichHandler(rich_tracebacks=False, markup=True, show_path=False)],
+    handlers=[
+        RichHandler(
+            rich_tracebacks=False, markup=True, show_path=False, show_time=False
+        )
+    ],
 )

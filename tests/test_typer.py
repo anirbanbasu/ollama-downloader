@@ -110,7 +110,7 @@ class TestTyperCalls:
         Test the 'hf-model-download' command of the CLI.
         """
         # Let's try downloading the smallest possible model to stop the test from taking too long
-        user_repo_quant = "unsloth/gemma-3-270m-it-GGUF:Q4_K_M"
+        user_repo_quant = "unsloth/SmolLM2-135M-Instruct-GGUF:Q4_K_M"
         result = runner.invoke(
             app=app,
             args=["hf-model-download", user_repo_quant],

@@ -8,7 +8,7 @@ import typer
 from rich import print as print
 from rich import print_json
 
-from ollama_downloader.downloader.model_downloader import OllamaModelDownloader
+from ollama_downloader.downloader.ollama_model_downloader import OllamaModelDownloader
 from ollama_downloader.downloader.hf_model_downloader import HuggingFaceModelDownloader
 
 # Initialize the logger
@@ -29,29 +29,25 @@ class OllamaDownloaderCLIApp:
             signal.signal(sig, self._interrupt_handler)
 
     def _interrupt_handler(self, signum: int, frame: FrameType | None):
-        if frame:
-            typer.echo(f"Interrupt signal received at {frame}, performing cleanup...")
-        else:
-            typer.echo("Interrupt signal received, performing cleanup...")
+        logger.warning("Interrupt signal received, performing clean shutdown")
+        logger.debug(f"Interrupt signal number: {signum}. Frame: {frame}")
         # Cleanup will be performed due to the finally block in each command
-        # self._cleanup()
-        typer.echo(f"Exiting {OllamaDownloaderCLIApp.__name__}.")
         sys.exit(0)
 
     def _initialize(self):
-        logger.debug(f"Initializing {OllamaDownloaderCLIApp.__name__}...")
+        logger.debug("Initializing downloaders...")
         self._model_downloader = OllamaModelDownloader()
         self._hf_model_downloader = HuggingFaceModelDownloader()
 
     def _cleanup(self):
-        logger.info("Running cleanup...")
+        logger.debug("Running cleanup...")
 
         if self._model_downloader:
             self._model_downloader.cleanup_unnecessary_files()
         if self._hf_model_downloader:
             self._hf_model_downloader.cleanup_unnecessary_files()
 
-        logger.info("Cleanup completed.")
+        logger.debug("Cleanup completed.")
 
     async def _show_config(self):
         return self._model_downloader.settings.model_dump_json()
@@ -88,9 +84,9 @@ class OllamaDownloaderCLIApp:
             self._initialize()
             result = await self._list_tags(model=model, update=update)
             for model_name, tags in result.items():
-                print(f"[bold]Model[/bold]: {model_name}")
+                print(f"Model: {model_name}")
                 if tags:
-                    print(f"\t[bold]Tags[/bold] ({len(tags)}): {tags}")
+                    print(f"\tTags: ({len(tags)}): {tags}")
         except Exception as e:
             logger.error(f"Error in listing model tags. {e}")
         finally:
