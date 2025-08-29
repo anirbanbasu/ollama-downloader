@@ -88,7 +88,6 @@ There are two main configuration groups: `ollama_server` and `ollama_library`. T
 ### `ollama_library`
 
  - The `models_path` points to the models directory of your Ollama installation. On Linux/UNIX systems, if it has been installed for your own user only then the path is the default `~/.ollama/models`. If it has been installed as a service, however, it could be, for example on Ubuntu 22.04, `/usr/share/ollama/.ollama/models`. Also note that the path could be a network share, if Ollama is on a different machine.
- - The `models_tags_cache` points to the file that will contain the cache of models and their tags as available in the Ollama library, _not your own Ollama installation_.
  - The `registry_base_url` is the URL to the Ollama registry. Unless you have a custom Ollama registry, use the default value as shown above.
  - Likewise, the `library_base_url` is the URL to the Ollama library. Keep the default value unless you really need to point it to some mirror.
  - The `verify_ssl` is a flag that tells the downloader tool to verify the authenticity of the HTTPS connections it makes to the Ollama registry or the library. Turn this off only if you have a man-in-the-middle proxy with self-signed certificates. Even in that case, typically environment variables `SSL_CERT_FILE` and `SSL_CERT_DIR` can be correctly configured to validate such certificates.
@@ -102,8 +101,7 @@ All the environment variables, listed below, are _optional_. If not specified, t
 | Variable           | Description and default value(s)                                     |
 |--------------------|----------------------------------------------------------------------|
 | `LOG_LEVEL`        | The level to be set for the logger. Default value is `INFO`. See all valid values in [Python 3 logging documentation](https://docs.python.org/3/library/logging.html#levels).|
-| `OD_CONF_DIR`      | The directory for config files. Default value is `conf` relative to the project root.|
-| `OD_SETTINGS_FILE` | The name of the settings file. Default value is `settings.json` in the `OD_CONF_DIR`.|
+| `OD_SETTINGS_FILE` | The name of the settings file. Default value is `conf/settings.json` relative to the _WD_.|
 | `OD_UA_NAME_VER`   | The application name and version to be prepended to the User-Agent header when making HTTP(S) requests. Default value is `ollama-downloader/0.1.0`.|
 
 ## Usage
@@ -114,21 +112,26 @@ However, if you need to run it with superuser rights (i.e., using `sudo`) for mo
 The `od` script provides the following commands. All its commands can be listed by running `uv run od --help`.
 
 ```bash
- Usage: od [OPTIONS] COMMAND [ARGS]...
+Usage: od [OPTIONS] COMMAND [ARGS]...
 
  A command-line interface for the Ollama downloader.
 
 
-╭─ Options ───────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                     │
-╰─────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ──────────────────────────────────────────────────────────────────────╮
-│ show-config         Shows the application configuration as JSON.                │
-│ list-models         Lists all available models in the Ollama library.           │
-│ list-tags           Lists all tags for a specific model.                        │
-│ model-download      Downloads a specific Ollama model with the given tag.       │
-│ hf-model-download   Downloads a specified Hugging Face model.                   │
-╰─────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────╮
+│ show-config         Shows the application configuration as JSON.            │
+│ list-models         Lists all available models in the Ollama library.       │
+│ list-tags           Lists all tags for a specific model.                    │
+│ model-download      Downloads a specific Ollama model with the given tag.   │
+│ hf-list-models      Lists all available models from Hugging Face that can   │
+│                     be downloaded into Ollama.                              │
+│ hf-list-tags        Lists all available quantisations as tags for a Hugging │
+│                     Face model that can be downloaded into Ollama. Note     │
+│                     that these are NOT the same as Hugging Face model tags. │
+│ hf-model-download   Downloads a specified Hugging Face model.               │
+╰─────────────────────────────────────────────────────────────────────────────╯
 ```
 
 You can also use `--help` on each command to see command-specific help.
@@ -162,36 +165,31 @@ Usage: od list-models [OPTIONS]
  Lists all available models in the Ollama library.
 
 
-╭─ Options ────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                  │
-╰──────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
 ```
 ### `list-tags`
 
-The `list-tags` command shows the tags available for a specified model, or for all models if `model` is not specified. _Note that this command will display cached information unless the `--update` flag is specified._
-
-If you specify the `--update` flag, the cache is updated with newly fetched information from the Ollama library.
+The `list-tags` command shows the tags available for a specified model in the Ollama library.
 
 Running `uv run od list-tags --help` displays the following.
 
 ```bash
-Usage: od list-tags [OPTIONS] [MODEL]
+Usage: od list-tags [OPTIONS] MODEL_IDENTIFIER
 
  Lists all tags for a specific model.
 
 
-╭─ Arguments ──────────────────────────────────────────────────╮
-│   model      [MODEL]  The name of the model to list tags     │
-│                       for, e.g., llama3.1. If not provided,  │
-│                       tags of all models will be listed.     │
-│                       [default: None]                        │
-╰──────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────╮
-│ --update    --no-update      Force update the model list and │
-│                              its tags before listing.        │
-│                              [default: no-update]            │
-│ --help                       Show this message and exit.     │
-╰──────────────────────────────────────────────────────────────╯
+╭─ Arguments ─────────────────────────────────────────────────────────────────╮
+│ *    model_identifier      TEXT  The name of the model to list tags for,    │
+│                                  e.g., llama3.1.                            │
+│                                  [default: None]                            │
+│                                  [required]                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
 ```
 ### `model-download`
 
@@ -203,7 +201,7 @@ During the process of downloading, the following are performed.
 2. Validation of the SHA256 hash of each downloaded BLOB.
 3. Post-download verification with the Ollama server specified by `ollama_server.url` in the configuration that the downloaded model is available.
 
-As an example, run `uv run od model-download all-minilm` to download the `all-minilm:latest` embedding model. _Note that if not specified, the tag is assumed to be `latest`_. You want to specify a tag as `<model>:<tag>`. For instance, run `uv run od model-download llama3.2:3b` to download the `llama3.2` model with the `3b` tag.
+As an example, run `uv run od model-download all-minilm` to download the `all-minilm:latest` embedding model. _Note that if not specified, the tag is assumed to be `latest`_. Specify a tag as `<model>:<tag>`. For instance, run `uv run od model-download llama3.2:3b` to download the `llama3.2` model with the `3b` tag.
 
 Running `uv run od model-download --help` displays the following.
 
@@ -265,6 +263,50 @@ Usage: od hf-model-download [OPTIONS] USER_REPO_QUANT
 ╭─ Options ─────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                   │
 ╰───────────────────────────────────────────────────────────────────────────────╯
+```
+
+### `hf-list-models`
+
+The `hf-list-models` lists available all available Hugging Face models that can be downloaded into Ollama.
+
+Running `uv run od hf-list-models --help` displays the following.
+
+```bash
+Usage: od hf-list-models [OPTIONS]
+
+ Lists all available models from Hugging Face that can be downloaded into
+ Ollama.
+
+
+╭─ Options ───────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
+```
+
+### `hf-list-tags`
+
+The `hf-list-tags` lists available quantisations as tags for a specified Hugging Face model that can be downloaded into Ollama.
+
+Running `uv run od hf-list-tags --help` displays the following.
+
+```bash
+Usage: od hf-list-tags [OPTIONS] MODEL_IDENTIFIER
+
+ Lists all available quantisations as tags for a Hugging Face model that can
+ be downloaded into Ollama. Note that these are NOT the same as Hugging Face
+ model tags.
+
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────╮
+│ *    model_identifier      TEXT  The name of the model to list tags for,    │
+│                                  e.g.,                                      │
+│                                  bartowski/Llama-3.2-1B-Instruct-GGUF.      │
+│                                  [default: None]                            │
+│                                  [required]                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ## Testing and coverage
