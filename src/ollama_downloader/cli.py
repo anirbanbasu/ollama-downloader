@@ -70,7 +70,7 @@ class OllamaDownloaderCLIApp:
         try:
             self._initialize()
             result = await self._list_models()
-            typer.echo(result)
+            print(f"Model identifiers: ({len(result)}): {result}")
         except Exception as e:
             logger.error(f"Error in listing models. {e}")
         finally:
@@ -108,7 +108,7 @@ class OllamaDownloaderCLIApp:
         try:
             self._initialize()
             result = await self._hf_list_models()
-            typer.echo(result)
+            print(f"Model identifiers: ({len(result)}): {result}")
         except Exception as e:
             logger.error(f"Error in listing models. {e}")
         finally:

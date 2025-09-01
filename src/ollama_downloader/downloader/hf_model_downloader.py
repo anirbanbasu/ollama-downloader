@@ -1,7 +1,10 @@
 import datetime
+import inspect
 import logging
 from typing import List, Tuple
 from urllib.parse import urlparse
+
+from importlib.metadata import version
 
 from environs import env
 
@@ -12,7 +15,6 @@ from ollama_downloader.downloader.model_downloader import ModelDownloader, Model
 # import lxml.html
 from ollama import Client as OllamaClient
 from huggingface_hub import HfApi
-from ollama_downloader import ic
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
@@ -119,6 +121,25 @@ class HuggingFaceModelDownloader(ModelDownloader):
         return found_model
 
     def list_available_models(self) -> List[str]:
+        hf_api = HfApi()
+        method_signature = inspect.signature(hf_api.list_models)
+        hf_api_version = version("huggingface-hub")
+        if "apps" in method_signature.parameters:
+            models = hf_api.list_models(apps="ollama")
+            model_identifiers = []
+            count = 0
+            # Limit to first 5 models for brevity and find a better way of doing this later.
+            for model in models:
+                count += 1
+                if count >= 5:
+                    break
+                model_identifiers.append(model.modelId)
+
+            if "dev" in hf_api_version and hf_api_version.startswith("0.35"):
+                logger.warning(
+                    f"You are using a version of huggingface-hub no newer than 0.34.4 but you have access to the apps parameter through the source {hf_api_version}. Please upgrade to the latest release to use the apps parameter in the future."
+                )
+            return model_identifiers
         raise NotImplementedError(
             "Listing models from Hugging Face while filtering by supported applications, e.g., Ollama is not implemented yet. Follow issue 3319: https://github.com/huggingface/huggingface_hub/issues/3319"
         )
@@ -126,7 +147,7 @@ class HuggingFaceModelDownloader(ModelDownloader):
     def list_model_tags(self, model_identifier: str) -> List[str]:
         hf_api = HfApi()
         model_info = hf_api.model_info(repo_id=model_identifier, files_metadata=True)
-        ic(model_info)
+        # ic(model_info)
         tags = []
         for repo_sibling in model_info.siblings:
             if repo_sibling.rfilename.endswith(".gguf"):

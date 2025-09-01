@@ -30,6 +30,9 @@ dependencies = [
     "typer>=0.16.0",
 ]
 
+[tool.uv.sources]
+huggingface-hub = { git = "https://github.com/huggingface/huggingface_hub.git" }
+
 [project.scripts]
 od = "ollama_downloader.cli:main"
 ollama-downloader = "ollama_downloader.cli:main"
