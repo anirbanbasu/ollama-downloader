@@ -83,7 +83,8 @@ class TestTyperCalls:
         """
         result = runner.invoke(app=app, args=["hf-list-models"])
         assert result.exit_code == 0
-        assert result.output == ""
+        # Expect at least few known models to be listed
+        assert "unsloth/gpt-oss-20b-gguf" in result.output.lower()
         assert "made-up-model-that-should-not-exist" not in result.output.lower()
 
     def test_hf_list_tags(self, runner):

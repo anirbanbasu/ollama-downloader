@@ -125,10 +125,11 @@ class HuggingFaceModelDownloader(ModelDownloader):
         method_signature = inspect.signature(hf_api.list_models)
         hf_api_version = version("huggingface-hub")
         if "apps" in method_signature.parameters:
-            models = hf_api.list_models(apps="ollama")
+            models = hf_api.list_models(apps="ollama", gated=False)
             model_identifiers = []
             count = 0
             # Limit to first 5 models for brevity and find a better way of doing this later.
+            # TODO: See: https://github.com/huggingface/huggingface_hub/issues/2741
             for model in models:
                 count += 1
                 if count >= 5:
