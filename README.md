@@ -283,6 +283,8 @@ Usage: od hf-list-models [OPTIONS]
 ╰─────────────────────────────────────────────────────────────────────────────╯
 ```
 
+_Note that due to the lack of offset-based paging support in the Hugging Face Hub API, the results will be limited to a certain maximum number (e.g., 100) models only with a link provided to browse through the full list. The message with the link will be displayed only if the `LOG_LEVEL` is set to `WARNING` or more verbose._
+
 ### `hf-list-tags`
 
 The `hf-list-tags` lists available quantisations as tags for a specified Hugging Face model that can be downloaded into Ollama.

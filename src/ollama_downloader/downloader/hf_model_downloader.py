@@ -122,24 +122,26 @@ class HuggingFaceModelDownloader(ModelDownloader):
 
     def list_available_models(self) -> List[str]:
         hf_api = HfApi()
+        # Temporary check to see if `apps` parameter is available in the current version of huggingface-hub
+        # Enforce huggingface-hub>=0.34.5 in pyproject.toml in the future.
         method_signature = inspect.signature(hf_api.list_models)
         hf_api_version = version("huggingface-hub")
+        limit_results_to = 100
         if "apps" in method_signature.parameters:
-            models = hf_api.list_models(apps="ollama", gated=False)
-            model_identifiers = []
-            count = 0
-            # Limit to first 5 models for brevity and find a better way of doing this later.
+            # Limit to 100 models for brevity and find a better way of doing this later.
             # TODO: See: https://github.com/huggingface/huggingface_hub/issues/2741
-            for model in models:
-                count += 1
-                if count >= 5:
-                    break
-                model_identifiers.append(model.modelId)
+            models = hf_api.list_models(
+                apps="ollama", gated=False, limit=limit_results_to
+            )
+            model_identifiers = [model.modelId for model in list(models)]
 
             if "dev" in hf_api_version and hf_api_version.startswith("0.35"):
                 logger.warning(
-                    f"You are using a version of huggingface-hub no newer than 0.34.4 but you have access to the apps parameter through the source {hf_api_version}. Please upgrade to the latest release to use the apps parameter in the future."
+                    f"You are using a development version of huggingface-hub: {hf_api_version}. Please upgrade to the latest release to use the apps parameter in the future."
                 )
+            logger.warning(
+                f"Listing models from Hugging Face is currently limited to the top {limit_results_to} models only. Browse through the full list at https://huggingface.co/models?apps=ollama&gated=False"
+            )
             return model_identifiers
         raise NotImplementedError(
             "Listing models from Hugging Face while filtering by supported applications, e.g., Ollama is not implemented yet. Follow issue 3319: https://github.com/huggingface/huggingface_hub/issues/3319"
@@ -148,7 +150,6 @@ class HuggingFaceModelDownloader(ModelDownloader):
     def list_model_tags(self, model_identifier: str) -> List[str]:
         hf_api = HfApi()
         model_info = hf_api.model_info(repo_id=model_identifier, files_metadata=True)
-        # ic(model_info)
         tags = []
         for repo_sibling in model_info.siblings:
             if repo_sibling.rfilename.endswith(".gguf"):
@@ -156,11 +157,8 @@ class HuggingFaceModelDownloader(ModelDownloader):
                 tag = repo_sibling.rfilename.split(".gguf")[0].split("-")[-1]
                 tags.append(f"{model_identifier}:{tag}")
         if len(tags) == 0:
-            # If no .gguf files found, the model is not supported for Ollama
+            # If no .gguf files found, the model is not for Ollama
             raise RuntimeError(
-                f"The model {model_identifier} does not support downloading into Ollama."
+                f"The model {model_identifier} has no support for Ollama."
             )
-        logger.warning(
-            "The current method of listing tags is experimental and may be inaccurate."
-        )
         return tags
