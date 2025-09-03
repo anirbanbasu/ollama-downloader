@@ -1,10 +1,8 @@
 import datetime
-import inspect
 import logging
 from typing import List, Tuple
 from urllib.parse import urlparse
 
-from importlib.metadata import version
 
 from environs import env
 
@@ -129,31 +127,58 @@ class HuggingFaceModelDownloader(ModelDownloader):
         return found_model
 
     def list_available_models(self) -> List[str]:
-        hf_api = HfApi()
-        # Temporary check to see if `apps` parameter is available in the current version of huggingface-hub
-        # Enforce huggingface-hub>=0.34.5 in pyproject.toml in the future.
-        method_signature = inspect.signature(hf_api.list_models)
-        hf_api_version = version("huggingface-hub")
-        limit_results_to = 100
-        if "apps" in method_signature.parameters:
-            # Limit to 100 models for brevity and find a better way of doing this later.
-            # TODO: See: https://github.com/huggingface/huggingface_hub/issues/2741
-            models = hf_api.list_models(
-                apps="ollama", gated=False, limit=limit_results_to
-            )
-            model_identifiers = [model.modelId for model in list(models)]
+        page_size = 100
+        next_page = 1
+        request_page = 1
+        api_url = f"https://huggingface.co/api/models?apps=ollama&gated=false&limit={page_size}&sort=trendingScore"
+        next_page_url = api_url
+        from ollama_downloader import ic
 
-            if "dev" in hf_api_version and hf_api_version.startswith("0.35"):
-                logger.warning(
-                    f"You are using a development version of huggingface-hub: {hf_api_version}. Please upgrade to the latest release to use the apps parameter in the future."
-                )
-            logger.warning(
-                f"Listing models from Hugging Face is currently limited to the top {limit_results_to} models only. Browse through the full list at https://huggingface.co/models?apps=ollama&gated=False"
-            )
-            return model_identifiers
-        raise NotImplementedError(
-            "Listing models from Hugging Face while filtering by supported applications, e.g., Ollama is not implemented yet. Follow issue 3319: https://github.com/huggingface/huggingface_hub/issues/3319"
-        )
+        with self.get_httpx_client(
+            self.settings.ollama_library.verify_ssl,
+            self.settings.ollama_library.timeout,
+        ) as client:
+            while next_page < request_page and next_page_url:
+                models_response = client.head(next_page_url)
+                models_response.raise_for_status()
+                # ic(models_response.headers)
+                next_page_url = models_response.links.get("next", {}).get("url")
+                next_page += 1
+            if next_page_url:
+                logger.info(f"Requesting page {next_page} from {next_page_url}")
+                models_response = client.get(next_page_url)
+                models_response.raise_for_status()
+                ic(models_response.headers)
+            model_identifiers = [
+                model["modelId"] for model in list(models_response.json())
+            ]
+
+        return model_identifiers
+        # hf_api = HfApi()
+        # # Temporary check to see if `apps` parameter is available in the current version of huggingface-hub
+        # # Enforce huggingface-hub>=0.34.5 in pyproject.toml in the future.
+        # method_signature = inspect.signature(hf_api.list_models)
+        # hf_api_version = version("huggingface-hub")
+        # limit_results_to = 100
+        # if "apps" in method_signature.parameters:
+        #     # Limit to 100 models for brevity and find a better way of doing this later.
+        #     # TODO: See: https://github.com/huggingface/huggingface_hub/issues/2741
+        #     models = hf_api.list_models(
+        #         apps="ollama", gated=False, limit=limit_results_to
+        #     )
+        #     model_identifiers = [model.modelId for model in list(models)]
+
+        #     if "dev" in hf_api_version and hf_api_version.startswith("0.35"):
+        #         logger.warning(
+        #             f"You are using a development version of huggingface-hub: {hf_api_version}. Please upgrade to the latest release to use the apps parameter in the future."
+        #         )
+        #     logger.warning(
+        #         f"Listing models from Hugging Face is currently limited to the top {limit_results_to} models only. Browse through the full list at https://huggingface.co/models?apps=ollama&gated=False"
+        #     )
+        #     return model_identifiers
+        # raise NotImplementedError(
+        #     "Listing models from Hugging Face while filtering by supported applications, e.g., Ollama is not implemented yet. Follow issue 3319: https://github.com/huggingface/huggingface_hub/issues/3319"
+        # )
 
     def list_model_tags(self, model_identifier: str) -> List[str]:
         hf_api = HfApi()
