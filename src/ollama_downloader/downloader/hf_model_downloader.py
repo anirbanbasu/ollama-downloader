@@ -14,7 +14,8 @@ from ollama_downloader.downloader.model_downloader import ModelDownloader, Model
 
 # import lxml.html
 from ollama import Client as OllamaClient
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi, configure_http_backend
+import requests  # type: ignore
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
@@ -24,6 +25,13 @@ logger.setLevel(env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upp
 class HuggingFaceModelDownloader(ModelDownloader):
     def __init__(self):
         super().__init__()
+        if not self.settings.ollama_library.verify_ssl:
+            logger.warning(
+                "Disabling SSL verification for HTTP requests. This is not recommended for production use."
+            )
+            session = requests.Session()
+            session.verify = False
+            configure_http_backend(backend_factory=lambda: session)
 
     def download_model(self, model_identifier: str) -> bool:
         # Validate the response as an ImageManifest but don't enforce strict validation
