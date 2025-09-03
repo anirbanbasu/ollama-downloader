@@ -366,6 +366,8 @@ class ModelDownloader(ABC):
             return False, None
         target_file = os.path.join(blobs_dir, named_digest.replace(":", "-"))
         shutil.move(source, target_file)
+        self._unnecessary_files.remove(source)
+        self._unnecessary_files.add(target_file)
         logger.info(f"Moved {source} to {target_file}")
         if self.settings.ollama_library.user_group:
             user, group = self.settings.ollama_library.user_group
@@ -376,8 +378,6 @@ class ModelDownloader(ABC):
             logger.info(
                 f"Changed ownership of {target_file} to user: {user}, group: {group}"
             )
-        self._unnecessary_files.remove(source)
-        self._unnecessary_files.add(target_file)
         return True, target_file
 
     def cleanup_unnecessary_files(self):
