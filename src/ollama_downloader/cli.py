@@ -3,6 +3,7 @@ import logging
 import signal
 import sys
 from types import FrameType
+from typing import Optional
 from typing_extensions import Annotated
 import typer
 from rich import print as print
@@ -101,13 +102,19 @@ class OllamaDownloaderCLIApp:
         finally:
             self._cleanup()
 
-    async def _hf_list_models(self):
-        return self._hf_model_downloader.list_available_models()
+    async def _hf_list_models(
+        self, page: int | None = None, page_size: int | None = None
+    ):
+        return self._hf_model_downloader.list_available_models(
+            page=page, page_size=page_size
+        )
 
-    async def run_hf_list_models(self):
+    async def run_hf_list_models(
+        self, page: int | None = None, page_size: int | None = None
+    ):
         try:
             self._initialize()
-            result = await self._hf_list_models()
+            result = await self._hf_list_models(page=page, page_size=page_size)
             print(f"Model identifiers: ({len(result)}): {result}")
         except Exception as e:
             logger.error(f"Error in listing models. {e}")
@@ -183,10 +190,26 @@ def model_download(
 
 
 @app.command()
-def hf_list_models():
-    """Lists all available models from Hugging Face that can be downloaded into Ollama."""
+def hf_list_models(
+    page: Annotated[
+        Optional[int],
+        typer.Option(
+            min=1,
+            help="The page number to retrieve (1-indexed).",
+        ),
+    ] = 1,
+    page_size: Annotated[
+        Optional[int],
+        typer.Option(
+            min=1,
+            max=100,
+            help="The number of models to retrieve per page. Maximum is 100.",
+        ),
+    ] = 25,
+):
+    """Lists available models from Hugging Face that can be downloaded into Ollama."""
     app_handler = OllamaDownloaderCLIApp()
-    asyncio.run(app_handler.run_hf_list_models())
+    asyncio.run(app_handler.run_hf_list_models(page, page_size))
 
 
 @app.command()

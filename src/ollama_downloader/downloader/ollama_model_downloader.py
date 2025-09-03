@@ -116,7 +116,17 @@ class OllamaModelDownloader(ModelDownloader):
         # Finally return success
         return True
 
-    def list_available_models(self) -> List[str]:
+    def list_available_models(
+        self, page: int | None = None, page_size: int | None = None
+    ) -> List[str]:
+        if page is not None:
+            logger.warning(
+                "Pagination is not supported for Ollama library. Ignoring page parameter."
+            )
+        if page_size is not None:
+            logger.warning(
+                "Pagination is not supported for Ollama library. Ignoring page_size parameter."
+            )
         with self.get_httpx_client(
             verify=self.settings.ollama_library.verify_ssl,
             timeout=self.settings.ollama_library.timeout,

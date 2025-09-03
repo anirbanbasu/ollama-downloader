@@ -125,8 +125,8 @@ Usage: od [OPTIONS] COMMAND [ARGS]...
 │ list-models         Lists all available models in the Ollama library.       │
 │ list-tags           Lists all tags for a specific model.                    │
 │ model-download      Downloads a specific Ollama model with the given tag.   │
-│ hf-list-models      Lists all available models from Hugging Face that can   │
-│                     be downloaded into Ollama.                              │
+│ hf-list-models      Lists available models from Hugging Face that can be    │
+│                     downloaded into Ollama.                                 │
 │ hf-list-tags        Lists all available quantisations as tags for a Hugging │
 │                     Face model that can be downloaded into Ollama. Note     │
 │                     that these are NOT the same as Hugging Face model tags. │
@@ -267,20 +267,25 @@ Usage: od hf-model-download [OPTIONS] USER_REPO_QUANT
 
 ### `hf-list-models`
 
-The `hf-list-models` lists available all available Hugging Face models that can be downloaded into Ollama.
+The `hf-list-models` lists available available Hugging Face models that can be downloaded into Ollama.
 
 Running `uv run od hf-list-models --help` displays the following.
 
 ```bash
 Usage: od hf-list-models [OPTIONS]
 
- Lists all available models from Hugging Face that can be downloaded into
- Ollama.
+ Lists available models from Hugging Face that can be downloaded into Ollama.
 
-
-╭─ Options ───────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                 │
-╰─────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────────╮
+│ --page             INTEGER RANGE [x>=1]       The page number to retrieve          │
+│                                               (1-indexed). Defaults to 1.          │
+│                                               [default: 1]                         │
+│ --page-size        INTEGER RANGE [1<=x<=100]  The number of models to retrieve per │
+│                                               page. Maximum is 100. Defaults to    │
+│                                               100.                                 │
+│                                               [default: 100]                       │
+│ --help                                        Show this message and exit.          │
+╰────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 _Note that due to the lack of offset-based paging support in the Hugging Face Hub API, the results will be limited to a certain maximum number (e.g., 100) models only with a link provided to browse through the full list. The message with the link will be displayed only if the `LOG_LEVEL` is set to `WARNING` or more verbose._

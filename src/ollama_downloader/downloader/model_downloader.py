@@ -64,9 +64,17 @@ class ModelDownloader(ABC):
         pass
 
     @abstractmethod
-    def list_available_models(self) -> List[str]:
+    def list_available_models(
+        self, page: int | None = None, page_size: int | None = None
+    ) -> List[str]:
         """
-        List available models.
+        List available models. If pagination is supported by the source, page and page_size can be used to control the results.
+        If pagination is not supported or the page and page_size are None, the number of models will be returned will depend on
+        the implementing sub-class.
+
+        Args:
+            page (int | None): The page number to retrieve, if pagination is supported.
+            page_size (int | None): The number of items per page, if pagination is supported
 
         Returns:
             list[str]: A list of available model identifiers, excluding any of their tags.

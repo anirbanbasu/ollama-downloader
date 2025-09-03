@@ -1,10 +1,11 @@
 import datetime
 import logging
-from typing import List, Tuple
+from typing import Annotated, List, Optional, Tuple
 from urllib.parse import urlparse
 
 
 from environs import env
+from pydantic import Field
 
 from ollama_downloader.common import EnvVar
 from ollama_downloader.data.data_models import ImageManifest
@@ -126,29 +127,31 @@ class HuggingFaceModelDownloader(ModelDownloader):
         self._unnecessary_files.clear()
         return found_model
 
-    def list_available_models(self) -> List[str]:
-        page_size = 100
+    def list_available_models(
+        self,
+        page: Annotated[Optional[int], Field(gt=0)] = None,
+        page_size: Annotated[Optional[int], Field(gt=0, le=100)] = None,
+    ) -> List[str]:
+        page_size = page_size or 100
         next_page = 1
-        request_page = 1
+        page = page or 1
         api_url = f"https://huggingface.co/api/models?apps=ollama&gated=false&limit={page_size}&sort=trendingScore"
         next_page_url = api_url
-        from ollama_downloader import ic
 
         with self.get_httpx_client(
             self.settings.ollama_library.verify_ssl,
             self.settings.ollama_library.timeout,
         ) as client:
-            while next_page < request_page and next_page_url:
-                models_response = client.head(next_page_url)
-                models_response.raise_for_status()
-                # ic(models_response.headers)
-                next_page_url = models_response.links.get("next", {}).get("url")
+            while next_page < page and next_page_url:
+                models_head = client.head(next_page_url)
+                models_head.raise_for_status()
+                next_page_url = models_head.links.get("next", {}).get("url")
                 next_page += 1
             if next_page_url:
-                logger.info(f"Requesting page {next_page} from {next_page_url}")
+                if next_page > 1:
+                    logger.info(f"Requesting page {next_page} from {next_page_url}")
                 models_response = client.get(next_page_url)
                 models_response.raise_for_status()
-                ic(models_response.headers)
             model_identifiers = [
                 model["modelId"] for model in list(models_response.json())
             ]
