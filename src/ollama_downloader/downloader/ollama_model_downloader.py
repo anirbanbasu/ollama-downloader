@@ -137,34 +137,33 @@ class OllamaModelDownloader(ModelDownloader):
 
     def list_model_tags(self, model_identifier: str) -> List[str]:
         available_models = self.list_available_models()
+        if model_identifier not in available_models:
+            raise RuntimeError(
+                f"Model {model_identifier} not found in the library models list."
+            )
         with self.get_httpx_client(
             verify=self.settings.ollama_library.verify_ssl,
             timeout=self.settings.ollama_library.timeout,
         ) as client:
             models_tags = []
-            if model_identifier not in available_models:
-                raise RuntimeError(
-                    f"Model {model_identifier} not found in the library models list."
+            logger.debug(
+                f"Fetching tags for model {model_identifier} from the Ollama library."
+            )
+            tags_response = client.get(
+                URL(self.settings.ollama_library.library_base_url).join(
+                    f"{model_identifier}/tags"
                 )
-            else:
-                logger.debug(
-                    f"Fetching tags for model {model_identifier} from the Ollama library."
-                )
-                tags_response = client.get(
-                    URL(self.settings.ollama_library.library_base_url).join(
-                        f"{model_identifier}/tags"
-                    )
-                )
-                tags_response.raise_for_status()
-                logger.debug(f"Parsing tags for model {model_identifier}.")
-                parsed_tags_html = lxml.html.document_fromstring(tags_response.text)
-                library_prefix = "/library/"
-                named_model_unique_tags: Set[str] = set()
-                for _, attribute, link, _ in lxml.html.iterlinks(parsed_tags_html):
-                    if attribute == "href" and link.startswith(
-                        f"{library_prefix}{model_identifier}:"
-                    ):
-                        named_model_unique_tags.add(link.replace(library_prefix, ""))
-                models_tags = list(named_model_unique_tags)
+            )
+            tags_response.raise_for_status()
+            logger.debug(f"Parsing tags for model {model_identifier}.")
+            parsed_tags_html = lxml.html.document_fromstring(tags_response.text)
+            library_prefix = "/library/"
+            named_model_unique_tags: Set[str] = set()
+            for _, attribute, link, _ in lxml.html.iterlinks(parsed_tags_html):
+                if attribute == "href" and link.startswith(
+                    f"{library_prefix}{model_identifier}:"
+                ):
+                    named_model_unique_tags.add(link.replace(library_prefix, ""))
+            models_tags = list(named_model_unique_tags)
 
             return models_tags
