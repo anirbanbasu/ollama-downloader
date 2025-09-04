@@ -208,3 +208,5 @@ __marimo__/
 
 # Ignore the config directory
 conf/
+# Pytest profiling
+prof/

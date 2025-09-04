@@ -54,4 +54,5 @@ dev = [
 test = [
     "coverage>=7.10.4",
     "pytest>=8.4.1",
+    "pytest-profiling>=1.8.1",
 ]
