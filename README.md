@@ -276,16 +276,15 @@ Usage: od hf-list-models [OPTIONS]
 
  Lists available models from Hugging Face that can be downloaded into Ollama.
 
-╭─ Options ──────────────────────────────────────────────────────────────────────────╮
-│ --page             INTEGER RANGE [x>=1]       The page number to retrieve          │
-│                                               (1-indexed). Defaults to 1.          │
-│                                               [default: 1]                         │
-│ --page-size        INTEGER RANGE [1<=x<=100]  The number of models to retrieve per │
-│                                               page. Maximum is 100. Defaults to    │
-│                                               100.                                 │
-│                                               [default: 100]                       │
-│ --help                                        Show this message and exit.          │
-╰────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ─────────────────────────────────────────────────────────────────────────────╮
+│ --page             INTEGER RANGE [x>=1]       The page number to retrieve             │
+│                                               (1-indexed).                            │
+│                                               [default: 1]                            │
+│ --page-size        INTEGER RANGE [1<=x<=100]  The number of models to retrieve per    │
+│                                               page. Maximum is 100.                   │
+│                                               [default: 25]                           │
+│ --help                                        Show this message and exit.             │
+╰───────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 _Note that due to the lack of offset-based paging support in the Hugging Face Hub API, the results will be limited to a certain maximum number (e.g., 100) models only with a link provided to browse through the full list. The message with the link will be displayed only if the `LOG_LEVEL` is set to `WARNING` or more verbose._
