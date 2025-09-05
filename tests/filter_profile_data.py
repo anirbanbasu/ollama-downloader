@@ -6,13 +6,15 @@ import subprocess
 from rich import print as print
 
 
-def filter_pstats(input_file: str, output_file: str, keep_regexes: list[str]):
+def filter_pstats_and_save_svg(
+    input_file: str, output_file: str, keep_regexes: list[str]
+):
     """
     Loads pstats data, filters it, and saves a new pstats file.
     `keep_regexes` is a list of regex patterns to match against function names.
     """
     stats = pstats.Stats(input_file)
-    # Get the raw dictionary of stats
+    # FIXME: Get the raw dictionary of stats -- this is very hacky because pstats doesn't expose this directly.
     original_stats = stats.stats  # type: ignore[attr-defined]
 
     filtered_stats = {}
@@ -32,6 +34,7 @@ def filter_pstats(input_file: str, output_file: str, keep_regexes: list[str]):
     # Include all dependencies of the kept functions
     all_needed = set(to_keep)
     queue = list(to_keep)
+    print("Matching functions:")
     print(queue)
 
     while queue:
@@ -67,14 +70,14 @@ def main():
     OUTPUT_PROF = "filtered.prof"
     OUTPUT_SVG = "filtered_profile.svg"
     target_path = os.path.join(PROF_DIR, TARGET_PROF)
-    if not os.path.exists(target_path):
-        raise FileNotFoundError(
-            f"Profile data file {target_path} not found. Maybe run the tests with profiling first?"
-        )
     try:
+        if not os.path.exists(target_path):
+            raise FileNotFoundError(
+                f"Profile data file {target_path} not found. Maybe run the tests with profiling first?"
+            )
         output_path = os.path.join(PROF_DIR, OUTPUT_PROF)
         output_svg_path = os.path.join(PROF_DIR, OUTPUT_SVG)
-        filter_pstats(target_path, output_path, patterns_to_keep)
+        filter_pstats_and_save_svg(target_path, output_path, patterns_to_keep)
         print(f"Filtered profile data saved to {output_path}.")
 
         conversion_command = (
@@ -84,6 +87,9 @@ def main():
             conversion_command, capture_output=True, shell=True, check=True
         )
         print(f"{result.args} completed with return code {result.returncode}.")
+        if result.returncode != 0:
+            print(f"stderr: {result.stderr.decode()}")
+            print(f"stdout: {result.stdout.decode()}")
     except Exception as e:
         print(f"Error during filtering and conversion of profile data. {e}")
 
