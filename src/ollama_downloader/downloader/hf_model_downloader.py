@@ -125,7 +125,7 @@ class HuggingFaceModelDownloader(ModelDownloader):
             )
         # If we reached here cleanly, remove all unnecessary file names but don't remove actual files.
         self._unnecessary_files.clear()
-        return found_model
+        return True
 
     def list_available_models(
         self,
