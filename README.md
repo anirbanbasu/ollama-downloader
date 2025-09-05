@@ -88,7 +88,6 @@ There are two main configuration groups: `ollama_server` and `ollama_library`. T
 ### `ollama_library`
 
  - The `models_path` points to the models directory of your Ollama installation. On Linux/UNIX systems, if it has been installed for your own user only then the path is the default `~/.ollama/models`. If it has been installed as a service, however, it could be, for example on Ubuntu 22.04, `/usr/share/ollama/.ollama/models`. Also note that the path could be a network share, if Ollama is on a different machine.
- - The `models_tags_cache` points to the file that will contain the cache of models and their tags as available in the Ollama library, _not your own Ollama installation_.
  - The `registry_base_url` is the URL to the Ollama registry. Unless you have a custom Ollama registry, use the default value as shown above.
  - Likewise, the `library_base_url` is the URL to the Ollama library. Keep the default value unless you really need to point it to some mirror.
  - The `verify_ssl` is a flag that tells the downloader tool to verify the authenticity of the HTTPS connections it makes to the Ollama registry or the library. Turn this off only if you have a man-in-the-middle proxy with self-signed certificates. Even in that case, typically environment variables `SSL_CERT_FILE` and `SSL_CERT_DIR` can be correctly configured to validate such certificates.
@@ -102,8 +101,7 @@ All the environment variables, listed below, are _optional_. If not specified, t
 | Variable           | Description and default value(s)                                     |
 |--------------------|----------------------------------------------------------------------|
 | `LOG_LEVEL`        | The level to be set for the logger. Default value is `INFO`. See all valid values in [Python 3 logging documentation](https://docs.python.org/3/library/logging.html#levels).|
-| `OD_CONF_DIR`      | The directory for config files. Default value is `conf` relative to the project root.|
-| `OD_SETTINGS_FILE` | The name of the settings file. Default value is `settings.json` in the `OD_CONF_DIR`.|
+| `OD_SETTINGS_FILE` | The name of the settings file. Default value is `conf/settings.json` relative to the _WD_.|
 | `OD_UA_NAME_VER`   | The application name and version to be prepended to the User-Agent header when making HTTP(S) requests. Default value is `ollama-downloader/0.1.0`.|
 
 ## Usage
@@ -114,21 +112,26 @@ However, if you need to run it with superuser rights (i.e., using `sudo`) for mo
 The `od` script provides the following commands. All its commands can be listed by running `uv run od --help`.
 
 ```bash
- Usage: od [OPTIONS] COMMAND [ARGS]...
+Usage: od [OPTIONS] COMMAND [ARGS]...
 
  A command-line interface for the Ollama downloader.
 
 
-╭─ Options ───────────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                     │
-╰─────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ──────────────────────────────────────────────────────────────────────╮
-│ show-config         Shows the application configuration as JSON.                │
-│ list-models         Lists all available models in the Ollama library.           │
-│ list-tags           Lists all tags for a specific model.                        │
-│ model-download      Downloads a specific Ollama model with the given tag.       │
-│ hf-model-download   Downloads a specified Hugging Face model.                   │
-╰─────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────╮
+│ show-config         Shows the application configuration as JSON.            │
+│ list-models         Lists all available models in the Ollama library.       │
+│ list-tags           Lists all tags for a specific model.                    │
+│ model-download      Downloads a specific Ollama model with the given tag.   │
+│ hf-list-models      Lists available models from Hugging Face that can be    │
+│                     downloaded into Ollama.                                 │
+│ hf-list-tags        Lists all available quantisations as tags for a Hugging │
+│                     Face model that can be downloaded into Ollama. Note     │
+│                     that these are NOT the same as Hugging Face model tags. │
+│ hf-model-download   Downloads a specified Hugging Face model.               │
+╰─────────────────────────────────────────────────────────────────────────────╯
 ```
 
 You can also use `--help` on each command to see command-specific help.
@@ -152,46 +155,43 @@ Usage: od show-config [OPTIONS]
 
 ### `list-models`
 
-The `list-models` command displays an up-to-date list of models that exist in the Ollama library.
+The `list-models` command displays an up-to-date list of models that exist in the Ollama library. _Note that unlike the pagination options for Hugging Face, the entire model list from the Ollama library is fetched and then pagination is applied locally_.
 
 Running `uv run od list-models --help` displays the following.
 
 ```bash
 Usage: od list-models [OPTIONS]
 
- Lists all available models in the Ollama library.
+ Lists all available models in the Ollama library. If pagination options are not provided,
+ all models will be listed.
 
-
-╭─ Options ────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                  │
-╰──────────────────────────────────────────────────────────────╯
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────╮
+│ --page             INTEGER RANGE [x>=1]       The page number to retrieve (1-indexed).     │
+│ --page-size        INTEGER RANGE [1<=x<=100]  The number of models to retrieve per page.   │
+│ --help                                        Show this message and exit.                  │
+╰────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 ### `list-tags`
 
-The `list-tags` command shows the tags available for a specified model, or for all models if `model` is not specified. _Note that this command will display cached information unless the `--update` flag is specified._
-
-If you specify the `--update` flag, the cache is updated with newly fetched information from the Ollama library.
+The `list-tags` command shows the tags available for a specified model in the Ollama library.
 
 Running `uv run od list-tags --help` displays the following.
 
 ```bash
-Usage: od list-tags [OPTIONS] [MODEL]
+Usage: od list-tags [OPTIONS] MODEL_IDENTIFIER
 
  Lists all tags for a specific model.
 
 
-╭─ Arguments ──────────────────────────────────────────────────╮
-│   model      [MODEL]  The name of the model to list tags     │
-│                       for, e.g., llama3.1. If not provided,  │
-│                       tags of all models will be listed.     │
-│                       [default: None]                        │
-╰──────────────────────────────────────────────────────────────╯
-╭─ Options ────────────────────────────────────────────────────╮
-│ --update    --no-update      Force update the model list and │
-│                              its tags before listing.        │
-│                              [default: no-update]            │
-│ --help                       Show this message and exit.     │
-╰──────────────────────────────────────────────────────────────╯
+╭─ Arguments ─────────────────────────────────────────────────────────────────╮
+│ *    model_identifier      TEXT  The name of the model to list tags for,    │
+│                                  e.g., llama3.1.                            │
+│                                  [default: None]                            │
+│                                  [required]                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
 ```
 ### `model-download`
 
@@ -203,7 +203,7 @@ During the process of downloading, the following are performed.
 2. Validation of the SHA256 hash of each downloaded BLOB.
 3. Post-download verification with the Ollama server specified by `ollama_server.url` in the configuration that the downloaded model is available.
 
-As an example, run `uv run od model-download all-minilm` to download the `all-minilm:latest` embedding model. _Note that if not specified, the tag is assumed to be `latest`_. You want to specify a tag as `<model>:<tag>`. For instance, run `uv run od model-download llama3.2:3b` to download the `llama3.2` model with the `3b` tag.
+As an example, run `uv run od model-download all-minilm` to download the `all-minilm:latest` embedding model. _Note that if not specified, the tag is assumed to be `latest`_. Specify a tag as `<model>:<tag>`. For instance, run `uv run od model-download llama3.2:3b` to download the `llama3.2` model with the `3b` tag.
 
 Running `uv run od model-download --help` displays the following.
 
@@ -267,7 +267,57 @@ Usage: od hf-model-download [OPTIONS] USER_REPO_QUANT
 ╰───────────────────────────────────────────────────────────────────────────────╯
 ```
 
-## Testing and coverage
+### `hf-list-models`
+
+The `hf-list-models` lists available available Hugging Face models that can be downloaded into Ollama.
+
+Running `uv run od hf-list-models --help` displays the following.
+
+```bash
+Usage: od hf-list-models [OPTIONS]
+
+ Lists available models from Hugging Face that can be downloaded into Ollama.
+
+╭─ Options ─────────────────────────────────────────────────────────────────────────────╮
+│ --page             INTEGER RANGE [x>=1]       The page number to retrieve             │
+│                                               (1-indexed).                            │
+│                                               [default: 1]                            │
+│ --page-size        INTEGER RANGE [1<=x<=100]  The number of models to retrieve per    │
+│                                               page.                                   │
+│                                               [default: 25]                           │
+│ --help                                        Show this message and exit.             │
+╰───────────────────────────────────────────────────────────────────────────────────────╯
+```
+
+_Note that due to the lack of offset-based paging support in the Hugging Face Hub API, the results will be limited to a certain maximum number (e.g., 100) models only with a link provided to browse through the full list. The message with the link will be displayed only if the `LOG_LEVEL` is set to `WARNING` or more verbose._
+
+### `hf-list-tags`
+
+The `hf-list-tags` lists available quantisations as tags for a specified Hugging Face model that can be downloaded into Ollama.
+
+Running `uv run od hf-list-tags --help` displays the following.
+
+```bash
+Usage: od hf-list-tags [OPTIONS] MODEL_IDENTIFIER
+
+ Lists all available quantisations as tags for a Hugging Face model that can
+ be downloaded into Ollama. Note that these are NOT the same as Hugging Face
+ model tags.
+
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────╮
+│ *    model_identifier      TEXT  The name of the model to list tags for,    │
+│                                  e.g.,                                      │
+│                                  bartowski/Llama-3.2-1B-Instruct-GGUF.      │
+│                                  [default: None]                            │
+│                                  [required]                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                 │
+╰─────────────────────────────────────────────────────────────────────────────╯
+```
+
+## Testing, coverage and profiling
 
 To run the provided set of tests using `pytest`, execute the following in _WD_. Append the flag `--capture=tee-sys` to the following command to see the console output during the tests. Note that the model download tests run as sub-processes. Their outputs will not be visible by using this flag.
 
@@ -281,6 +331,32 @@ To get a report on coverage while invoking the tests, run the following two comm
 uv run --group test coverage run -m pytest tests/
 uv run coverage report
 ```
+
+This will result in an output similar to the following.
+
+```bash
+Name                                                          Stmts   Miss  Cover
+---------------------------------------------------------------------------------
+src/ollama_downloader/__init__.py                                10      2    80%
+src/ollama_downloader/cli.py                                    135     12    91%
+src/ollama_downloader/common.py                                  12      0   100%
+src/ollama_downloader/data/__init__.py                            0      0   100%
+src/ollama_downloader/data/data_models.py                        73     19    74%
+src/ollama_downloader/downloader/__init__.py                      0      0   100%
+src/ollama_downloader/downloader/hf_model_downloader.py          89      6    93%
+src/ollama_downloader/downloader/model_downloader.py            176     51    71%
+src/ollama_downloader/downloader/ollama_model_downloader.py      86      5    94%
+tests/__init__.py                                                 0      0   100%
+tests/test_data_models.py                                        12      0   100%
+tests/test_typer.py                                              62      0   100%
+---------------------------------------------------------------------------------
+TOTAL                                                           655     95    85%
+```
+
+There is a handy script for running tests `run-tests.sh` in _WD_. It can accept any parameters to be passed to `pytest`. Thus, tests can be filtered using the `-k` to specify tests to run or not. Likewise, profiling can be done by calling `./run-tests.sh --profile`. The resulting profile information will be generated and saved in _WD_`/prof`. A SVG of the complete profile can be generated by calling `./run-tests.sh --profile --profile-svg`.
+
+Profile information can also be filtered and a SVG of the filtered profile generated by editing the somewhat hacky script _WD_`/tests/filter_profile_data.py`.
+The script can be run using `uv` as `uv run tests/filter_profile_data.py`.
 
 ## Contributing
 

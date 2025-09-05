@@ -208,5 +208,5 @@ __marimo__/
 
 # Ignore the config directory
 conf/
-# Ignore the models tags cache
-models_tags.json
+# Pytest profiling
+prof/

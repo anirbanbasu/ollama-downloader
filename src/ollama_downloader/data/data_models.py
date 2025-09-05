@@ -1,5 +1,13 @@
+import logging
+import os
 from pydantic import BaseModel, Field
-from typing import Optional, Tuple
+from typing import ClassVar, Optional, Self, Tuple
+
+from environs import env
+
+from ollama_downloader.common import EnvVar
+
+logger = logging.getLogger(__name__)
 
 
 class OllamaServer(BaseModel):
@@ -21,10 +29,6 @@ class OllamaLibrary(BaseModel):
     models_path: str = Field(
         default="~/.ollama/models",
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
-    )
-    models_tags_cache: str = Field(
-        default="models_tags.json",
-        description="Path to the cache file for model tags. This file is used to store the tags of models to avoid repeated requests to the Ollama server.",
     )
     registry_base_url: Optional[str] = Field(
         default="https://registry.ollama.ai/v2/library/",
@@ -57,6 +61,83 @@ class AppSettings(BaseModel):
         default=OllamaLibrary(),
         description="Settings for accessing the Ollama library and storing locally.",
     )
+
+    _instance: ClassVar[Self | None] = None
+
+    def __new__(cls: type["AppSettings"]) -> "AppSettings":
+        if cls._instance is None:
+            # Create instance using super().__new__ to bypass any recursion
+            instance = super().__new__(cls)
+            cls._instance = instance
+        return cls._instance
+
+    @staticmethod
+    def load_or_create_default(
+        settings_file: str = EnvVar.DEFAULT__OD_SETTINGS_FILE,
+    ) -> "AppSettings | None":
+        """
+        Load settings from the configuration file, or create default settings if the file does not exist.
+
+        Returns:
+            AppSettings: The application settings loaded from the configuration file,
+            or default settings if the file does not exist.
+        """
+        settings = AppSettings.load_settings(settings_file)
+        if settings is None:
+            # This will be a singleton instance
+            settings = AppSettings()
+            if not AppSettings.save_settings(settings, settings_file):
+                return None
+        return settings
+
+    @staticmethod
+    def load_settings(
+        settings_file: str = env.str(
+            EnvVar.OD_SETTINGS_FILE, default=EnvVar.DEFAULT__OD_SETTINGS_FILE
+        ),
+    ) -> "AppSettings | None":
+        """
+        Load settings from the configuration file.
+
+        Returns:
+            AppSettings: The application settings loaded from the configuration file.
+            If the file does not exist or cannot be parsed, returns None.
+        """
+        try:
+            with open(settings_file, "r") as f:
+                # Parse the JSON file into the AppSettings model
+                return_value = AppSettings.model_validate_json(f.read())
+            return return_value
+        except FileNotFoundError:
+            logger.error(f"Configuration file {settings_file} not found.")
+        except Exception as e:
+            logger.exception(f"Error loading settings from {settings_file}. {e}")
+        return None
+
+    @staticmethod
+    def save_settings(
+        settings: "AppSettings",
+        settings_file: str = env.str(
+            EnvVar.OD_SETTINGS_FILE, default=EnvVar.DEFAULT__OD_SETTINGS_FILE
+        ),
+    ) -> bool:
+        """
+        Save the application settings to the configuration file.
+
+        Returns:
+            bool: True if settings were saved successfully, False otherwise.
+        """
+        try:
+            config_dir = os.path.dirname(settings_file)
+            if config_dir and not os.path.exists(config_dir):
+                os.makedirs(config_dir, exist_ok=False)
+            with open(settings_file, "w") as f:
+                f.write(settings.model_dump_json(indent=4))
+            logger.info(f"Settings saved to {settings_file}")
+            return True
+        except Exception as e:
+            logger.exception(f"Error saving settings to {settings_file}. {e}")
+            return False
 
 
 class ImageManifestConfig(BaseModel):
