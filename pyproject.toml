@@ -24,14 +24,15 @@ requires-python = ">=3.12"
 dependencies = [
     "environs>=14.3.0",
     "httpx[http2]>=0.28.1",
-    "huggingface-hub>=0.34.4",
     "lxml>=6.0.0",
     "ollama>=0.5.3",
     "typer>=0.16.0",
 ]
 
-[tool.uv.sources]
-huggingface-hub = { git = "https://github.com/huggingface/huggingface_hub.git" }
+[tool.coverage.run]
+    omit = [
+        "tests/filter_profile_data.py",
+    ]
 
 [project.scripts]
 od = "ollama_downloader.cli:main"

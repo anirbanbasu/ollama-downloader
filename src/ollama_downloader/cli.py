@@ -64,14 +64,35 @@ class OllamaDownloaderCLIApp:
         finally:
             self._cleanup()
 
-    async def _list_models(self):
-        return self._model_downloader.list_available_models()
+    async def _list_models(self, page: int | None = None, page_size: int | None = None):
+        return self._model_downloader.list_available_models(
+            page=page, page_size=page_size
+        )
 
-    async def run_list_models(self):
+    async def run_list_models(
+        self, page: int | None = None, page_size: int | None = None
+    ):
         try:
             self._initialize()
             result = await self._list_models()
-            print(f"Model identifiers: ({len(result)}): {result}")
+            filtered_result = result
+            if page_size and page:
+                # Adjust page number for 0-based index
+                start_index = (page - 1) * page_size
+                end_index = start_index + page_size
+                filtered_result = result[start_index:end_index]
+            if len(filtered_result) == 0:
+                logger.warning(
+                    f"No models found for the specified page {page} and page size {page_size}. Showing all models instead."
+                )
+                filtered_result = result
+                page = None
+            if page:
+                print(
+                    f"Model identifiers: ({len(filtered_result)}, page {page}): {filtered_result}"
+                )
+            else:
+                print(f"Model identifiers: ({len(filtered_result)}): {filtered_result}")
         except Exception as e:
             logger.error(f"Error in listing models. {e}")
         finally:
@@ -115,7 +136,10 @@ class OllamaDownloaderCLIApp:
         try:
             self._initialize()
             result = await self._hf_list_models(page=page, page_size=page_size)
-            print(f"Model identifiers: ({len(result)}): {result}")
+            if page:
+                print(f"Model identifiers: ({len(result)}, page {page}): {result}")
+            else:
+                print(f"Model identifiers: ({len(result)}): {result}")
         except Exception as e:
             logger.error(f"Error in listing models. {e}")
         finally:
@@ -157,10 +181,26 @@ def show_config():
 
 
 @app.command()
-def list_models():
-    """Lists all available models in the Ollama library."""
+def list_models(
+    page: Annotated[
+        Optional[int],
+        typer.Option(
+            min=1,
+            help="The page number to retrieve (1-indexed).",
+        ),
+    ] = None,
+    page_size: Annotated[
+        Optional[int],
+        typer.Option(
+            min=1,
+            max=100,
+            help="The number of models to retrieve per page.",
+        ),
+    ] = None,
+):
+    """Lists all available models in the Ollama library. If pagination options are not provided, all models will be listed."""
     app_handler = OllamaDownloaderCLIApp()
-    asyncio.run(app_handler.run_list_models())
+    asyncio.run(app_handler.run_list_models(page=page, page_size=page_size))
 
 
 @app.command()
@@ -203,7 +243,7 @@ def hf_list_models(
         typer.Option(
             min=1,
             max=100,
-            help="The number of models to retrieve per page. Maximum is 100.",
+            help="The number of models to retrieve per page.",
         ),
     ] = 25,
 ):

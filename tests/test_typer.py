@@ -81,10 +81,11 @@ class TestTyperCalls:
         """
         Test the hf-list-models' command of the CLI.
         """
-        result = runner.invoke(app=app, args=["hf-list-models"])
+        result = runner.invoke(app=app, args=["hf-list-models", "--page", "4"])
         assert result.exit_code == 0
-        # Expect at least few known models to be listed
-        assert "unsloth/gpt-oss-20b-gguf" in result.output.lower()
+        # Expect the output to contain at least 25 models on page 4
+        # Models change often on Hugging Face, so we cannot check for specific models
+        assert "25, page 4" in result.output.lower()
         assert "made-up-model-that-should-not-exist" not in result.output.lower()
 
     def test_hf_list_tags(self, runner):
