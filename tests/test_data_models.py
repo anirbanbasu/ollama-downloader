@@ -18,7 +18,7 @@ class TestDataModels:
         another_settings = AppSettings()
         yet_another_settings = AppSettings()
         # Singleton behavior
-        assert id(another_settings) == id(another_settings) == id(yet_another_settings)
+        assert id(settings) == id(another_settings) == id(yet_another_settings)
 
         another_settings.ollama_library.verify_ssl = False
         # Singleton behavior check: changing one instance changes all
