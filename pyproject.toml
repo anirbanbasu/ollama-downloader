@@ -8,7 +8,8 @@ license-files = ["LICEN[CS]E*"]
 keywords = ["downloader", "tool", "models", "web-scraper", "huggingface", "huggingface-models", "ollama", "ollama-downloader", "ollama-model", "ollama-library"]
 authors = [
     { name = "Anirban Basu", email = "anirbanbasu@users.noreply.github.com" },
-    { name = "Jairo Lopez", email = "nacarino@users.noreply.github.com" }
+    { name = "Jairo Lopez", email = "nacarino@users.noreply.github.com" },
+    { name = "Aanjishnu Bhattacharyya", email = "NimComPoo-04@users.noreply.github.com" }
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -26,6 +27,7 @@ dependencies = [
     "httpx[http2]>=0.28.1",
     "lxml>=6.0.0",
     "ollama>=0.5.3",
+    "psutil>=7.0.0",
     "typer>=0.16.0",
 ]
 

@@ -1,16 +1,25 @@
 import asyncio
+import grp
+import json
 import logging
+import os
+import platform
+import pwd
+import re
 import signal
 import sys
 from types import FrameType
-from typing import Optional
+from typing import Any, Dict, Optional
 from typing_extensions import Annotated
 import typer
 from rich import print as print
 from rich import print_json
+import psutil
 
 from ollama_downloader.downloader.ollama_model_downloader import OllamaModelDownloader
 from ollama_downloader.downloader.hf_model_downloader import HuggingFaceModelDownloader
+
+from ollama import Client as OllamaClient
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
@@ -61,6 +70,146 @@ class OllamaDownloaderCLIApp:
             print_json(json=result)
         except Exception as e:
             logger.error(f"Error in showing config. {e}")
+        finally:
+            self._cleanup()
+
+    async def _auto_config(self):
+        logger.warning(
+            "Automatic configuration is a future experimental idea, which has not been implemented yet. Stay tuned!"
+        )
+        logger.warning(
+            "Some relevant information about Ollama will be displayed but these are based on assumptions that may not always be true."
+        )
+        # TODO: The following stuff must go in its own module/class with its own tests. This is just a placeholder.
+        # The idea is to gather relevant information about the Ollama installation and use it to infer a configuration.
+        # 1. Check if Ollama is installed and running.
+        # 2. Output the IP/interface and port the Ollama server is listening on.
+        # 3. Output the Ollama executable path.
+        # 4. Output user/group Ollama is running as.
+        # 5. Attempt to connect to the running Ollama server and try to infer the model storage path from the first modelfile.
+
+        if platform.system() == "Windows":
+            # Don't bother going there until we have a real Windows machine to test on.
+            raise NotImplementedError(
+                "Automatic configuration is not supported on Windows yet. Probably never will be!"
+            )
+        relevant_info: Dict[str, Any] = {}
+
+        pid: int = -1
+        for proc in psutil.process_iter(["pid", "name"]):
+            if proc.info["name"] == "ollama":
+                pid = proc.info["pid"]
+        if pid < 0:
+            raise RuntimeError(
+                "Ollama process not found. Is Ollama installed and running?"
+            )
+        process = psutil.Process(pid)
+        relevant_info["process"] = {"name": process.name(), "pid": pid}
+        parent_id = process.ppid()
+        relevant_info["parent"] = {
+            "name": psutil.Process(parent_id).name(),
+            "pid": parent_id,
+        }
+        # User and Group Information
+        username = process.username()
+
+        owner = {}
+        effective_uid = process.uids().effective
+        effective_gid = process.gids().effective
+        owner["user"] = {"name": username, "uid": effective_uid}
+        owner["group"] = {
+            "name": grp.getgrgid(effective_gid).gr_name,
+            "gid": effective_gid,
+        }
+        relevant_info["owner"] = owner
+
+        relevant_info["sudo_needed_to_download_models"] = os.getuid() != effective_uid
+
+        relevant_info["executable"] = process.exe()
+        relevant_info["cmdline"] = process.cmdline()
+        relevant_info["model_dir_explicitly_specified"] = (
+            process.environ().get("OLLAMA_MODELS", None) is not None
+        )
+
+        relevant_info["http_proxy_specified"] = (
+            process.environ().get("HTTP_PROXY", None) is not None
+            or process.environ().get("http_proxy", None) is not None
+            or process.environ().get("HTTPS_PROXY", None) is not None
+            or process.environ().get("https_proxy", None) is not None
+        )
+
+        listening_on = []
+        ollama_url = ""
+        for conn in process.net_connections(kind="inet"):
+            if conn.status == psutil.CONN_LISTEN:
+                laddr = (
+                    f"{conn.laddr.ip}:{conn.laddr.port}"
+                    if conn.laddr.ip != "::"
+                    else f"127.0.0.1:{conn.laddr.port}"
+                )
+                listening_on.append(laddr)
+                ollama_url = f"http://{laddr}"
+                # Just take the first listening address
+                break
+        relevant_info["listening_on"] = listening_on
+
+        ollama_client = OllamaClient(host=ollama_url)
+        models_list = ollama_client.list().models
+        if len(models_list) > 0:
+            modelfile_text = ollama_client.show(models_list[0].model).modelfile
+            pattern = re.compile(
+                r"^\s*FROM\s+(.+?)(?:\s*#.*)?$", re.IGNORECASE | re.MULTILINE
+            )
+            match = pattern.search(modelfile_text)
+            if match:
+                model_blob_path = match.group(1).strip()
+                likely_models_dir = str(
+                    os.path.dirname(os.path.dirname(model_blob_path))
+                )
+                relevant_info["likely_models_path"] = likely_models_dir.replace(
+                    os.path.expanduser("~"), "~"
+                )
+                real_models_path = os.path.realpath(likely_models_dir)
+                is_symlink_in_path = real_models_path != likely_models_dir
+                if is_symlink_in_path:
+                    relevant_info["symlink_in_models_path"] = is_symlink_in_path
+                    relevant_info["likely_real_models_path"] = real_models_path
+                    stat_info = os.stat(real_models_path)
+                    relevant_info["likely_real_models_path_owner"] = {
+                        "user": {
+                            "name": pwd.getpwuid(stat_info.st_uid).pw_name,
+                            "uid": stat_info.st_uid,
+                        },
+                        "group": {
+                            "name": grp.getgrgid(stat_info.st_gid).gr_name,
+                            "gid": stat_info.st_gid,
+                        },
+                    }
+        else:
+            logger.warning(
+                "No models found in the running Ollama instance. Models path cannot be computed."
+            )
+
+        open_files = []
+        for file in process.open_files():
+            open_files.append(file.path)
+        relevant_info["ollama_open_files"] = open_files
+
+        relevant_info["ollama_is_likely_daemon"] = (
+            process.terminal() is None
+            and process.status() not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
+            and process.ppid() != 1
+        )
+
+        return json.dumps(relevant_info)
+
+    async def run_auto_config(self):
+        try:
+            self._initialize()
+            result = await self._auto_config()
+            print_json(json=result)
+        except Exception as e:
+            logger.error(f"Error in generating automatic config. {e}")
         finally:
             self._cleanup()
 
@@ -281,6 +430,13 @@ def hf_model_download(
     """Downloads a specified Hugging Face model."""
     app_handler = OllamaDownloaderCLIApp()
     asyncio.run(app_handler.run_hf_model_download(user_repo_quant=user_repo_quant))
+
+
+@app.command()
+def auto_config():
+    """Display an automatically inferred configuration."""
+    app_handler = OllamaDownloaderCLIApp()
+    asyncio.run(app_handler.run_auto_config())
 
 
 def main():
