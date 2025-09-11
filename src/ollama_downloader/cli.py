@@ -210,6 +210,10 @@ class OllamaDownloaderCLIApp:
             print_json(json=result)
         except Exception as e:
             logger.error(f"Error in generating automatic config. {e}")
+            if isinstance(e, psutil.AccessDenied):
+                logger.info(
+                    "Seems like you need to run this command with super-user permissions. Try `sudo`!"
+                )
         finally:
             self._cleanup()
 
