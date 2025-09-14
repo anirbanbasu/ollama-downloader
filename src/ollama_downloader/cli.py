@@ -215,6 +215,14 @@ class OllamaDownloaderCLIApp:
             and process.ppid() != 1 )
         )
 
+        model_path = self._model_downloader.settings.ollama_library.models_path
+        new_model_path = relevant_info['likely_models_path']
+        if model_path != new_model_path:
+            logger.warning('Changing models install path from {} to {}'.format(
+                model_path, new_model_path))
+            self._model_downloader.settings.ollama_library.models_path = new_model_path
+            self._model_downloader.settings.save_settings(self._model_downloader.settings)
+
         return json.dumps(relevant_info)
 
     async def run_auto_config(self):
@@ -224,6 +232,10 @@ class OllamaDownloaderCLIApp:
             print_json(json=result)
         except Exception as e:
             logger.error(f"Error in generating automatic config. {e}")
+            if isinstance(e, psutil.AccessDenied):
+                logger.info(
+                    "Seems like you need to run this command with super-user permissions. Try `sudo`!"
+                )
         finally:
             self._cleanup()
 
