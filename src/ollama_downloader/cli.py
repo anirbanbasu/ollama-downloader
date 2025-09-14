@@ -127,8 +127,10 @@ class OllamaDownloaderCLIApp:
 
         relevant_info["executable"] = process.exe()
         relevant_info["cmdline"] = process.cmdline()
+
+        explicit_models_dir = process.environ().get("OLLAMA_MODELS", None)
         relevant_info["model_dir_explicitly_specified"] = (
-            process.environ().get("OLLAMA_MODELS", None) is not None
+            explicit_models_dir is not None
         )
 
         relevant_info["http_proxy_specified"] = (
@@ -153,9 +155,20 @@ class OllamaDownloaderCLIApp:
                 break
         relevant_info["listening_on"] = listening_on
 
+        # FIXME: This is not a good idea, since we are including a specific check
+        # but most systems use this init system so it maybe fine.
+        systemd_service = '/etc/systemd/system/ollama.service'
+        systemd_daemon = os.path.exists(systemd_service)
+
         ollama_client = OllamaClient(host=ollama_url)
         models_list = ollama_client.list().models
-        if len(models_list) > 0:
+        if explicit_models_dir is not None:
+            relevant_info["likely_models_path"] = explicit_models_dir
+        elif systemd_daemon:
+            # https://ollama.com/install.sh :: function configure_systemd()
+            # if systemd is the init system we use the /usr/share/ollama directory for all installs
+            relevant_info['likely_models_path'] =  '/usr/share/ollama/.ollama/models'
+        elif len(models_list) > 0:
             modelfile_text = ollama_client.show(models_list[0].model).modelfile
             pattern = re.compile(
                 r"^\s*FROM\s+(.+?)(?:\s*#.*)?$", re.IGNORECASE | re.MULTILINE
@@ -196,9 +209,10 @@ class OllamaDownloaderCLIApp:
         relevant_info["ollama_open_files"] = open_files
 
         relevant_info["ollama_is_likely_daemon"] = (
+            systemd_daemon or (
             process.terminal() is None
             and process.status() not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
-            and process.ppid() != 1
+            and process.ppid() != 1 )
         )
 
         return json.dumps(relevant_info)
@@ -210,10 +224,6 @@ class OllamaDownloaderCLIApp:
             print_json(json=result)
         except Exception as e:
             logger.error(f"Error in generating automatic config. {e}")
-            if isinstance(e, psutil.AccessDenied):
-                logger.info(
-                    "Seems like you need to run this command with super-user permissions. Try `sudo`!"
-                )
         finally:
             self._cleanup()
 
