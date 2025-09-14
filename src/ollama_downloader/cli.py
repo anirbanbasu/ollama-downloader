@@ -157,7 +157,7 @@ class OllamaDownloaderCLIApp:
 
         # FIXME: This is not a good idea, since we are including a specific check
         # but most systems use this init system so it maybe fine.
-        systemd_service = '/etc/systemd/system/ollama.service'
+        systemd_service = "/etc/systemd/system/ollama.service"
         systemd_daemon = os.path.exists(systemd_service)
 
         ollama_client = OllamaClient(host=ollama_url)
@@ -167,7 +167,7 @@ class OllamaDownloaderCLIApp:
         elif systemd_daemon:
             # https://ollama.com/install.sh :: function configure_systemd()
             # if systemd is the init system we use the /usr/share/ollama directory for all installs
-            relevant_info['likely_models_path'] =  '/usr/share/ollama/.ollama/models'
+            relevant_info["likely_models_path"] = "/usr/share/ollama/.ollama/models"
         elif len(models_list) > 0:
             modelfile_text = ollama_client.show(models_list[0].model).modelfile
             pattern = re.compile(
@@ -208,20 +208,24 @@ class OllamaDownloaderCLIApp:
             open_files.append(file.path)
         relevant_info["ollama_open_files"] = open_files
 
-        relevant_info["ollama_is_likely_daemon"] = (
-            systemd_daemon or (
+        relevant_info["ollama_is_likely_daemon"] = systemd_daemon or (
             process.terminal() is None
             and process.status() not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
-            and process.ppid() != 1 )
+            and process.ppid() != 1
         )
 
         model_path = self._model_downloader.settings.ollama_library.models_path
-        new_model_path = relevant_info['likely_models_path']
+        new_model_path = relevant_info["likely_models_path"]
         if model_path != new_model_path:
-            logger.warning('Changing models install path from {} to {}'.format(
-                model_path, new_model_path))
+            logger.warning(
+                "Changing models install path from {} to {}".format(
+                    model_path, new_model_path
+                )
+            )
             self._model_downloader.settings.ollama_library.models_path = new_model_path
-            self._model_downloader.settings.save_settings(self._model_downloader.settings)
+            self._model_downloader.settings.save_settings(
+                self._model_downloader.settings
+            )
 
         return json.dumps(relevant_info)
 
