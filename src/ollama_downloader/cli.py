@@ -199,8 +199,10 @@ class OllamaDownloaderCLIApp:
                         },
                     }
         else:
+            # We could select ~/.ollama/models as a default directory
+            relevant_info["likely_models_path"] = "~/.ollama/models"
             logger.warning(
-                "No models found in the running Ollama instance. Models path cannot be computed."
+                "No models found in the running Ollama instance. Models path cannot be computed. Using defaults."
             )
 
         open_files = []
@@ -208,24 +210,31 @@ class OllamaDownloaderCLIApp:
             open_files.append(file.path)
         relevant_info["ollama_open_files"] = open_files
 
-        relevant_info["ollama_is_likely_daemon"] = systemd_daemon or (
-            process.terminal() is None
-            and process.status() not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
-            and process.ppid() != 1
-        )
-
-        model_path = self._model_downloader.settings.ollama_library.models_path
-        new_model_path = relevant_info["likely_models_path"]
-        if model_path != new_model_path:
-            logger.warning(
-                f"Changing models install path from {model_path} to {new_model_path}"
+        # auto-config does not need to fail if we can't detect if ollama is a daemon or not
+        try:
+            relevant_info["ollama_is_likely_daemon"] = systemd_daemon or (
+                process.terminal() is None
+                and process.status() not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
+                and process.ppid() != 1
             )
-            self._model_downloader.settings.ollama_library.models_path = new_model_path
-            self._model_downloader.settings.save_settings(
-                self._model_downloader.settings
-            )
+        except e:
+            if isinstance(e, psutil.AccessDenied):
+                logger.info('Seems like you need to run this command with super-user permissions. Try `sudo`!')
 
-        return json.dumps(relevant_info)
+        current_settings = self._model_downloader.settings
+
+        new_settings = current_settings.model_dump()
+        new_settings["ollama_library"]["user_group"] = (owner["user"]["name"], owner["group"]["name"])
+        new_settings["ollama_library"]["models_path"] = relevant_info["likely_models_path"]
+
+        for entry in new_settings["ollama_library"]:
+            value = new_settings["ollama_library"][entry]
+            current_value = current_settings.ollama_library.__dict__[entry]
+            if current_value != value:
+                logger.info(f"Change value of {entry} from {current_value} to {value}. Updating the `conf/settings.json` may be nessesary.")
+
+        # we do not update anything without the user consent
+        return current_settings.model_dump_json()
 
     async def run_auto_config(self):
         try:
