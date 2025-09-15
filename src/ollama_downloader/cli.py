@@ -1,6 +1,5 @@
 import asyncio
 import grp
-import json
 import logging
 import os
 import platform
@@ -214,24 +213,34 @@ class OllamaDownloaderCLIApp:
         try:
             relevant_info["ollama_is_likely_daemon"] = systemd_daemon or (
                 process.terminal() is None
-                and process.status() not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
+                and process.status()
+                not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
                 and process.ppid() != 1
             )
         except e:
             if isinstance(e, psutil.AccessDenied):
-                logger.info('Seems like you need to run this command with super-user permissions. Try `sudo`!')
+                logger.info(
+                    "Seems like you need to run this command with super-user permissions. Try `sudo`!"
+                )
 
         current_settings = self._model_downloader.settings
 
         new_settings = current_settings.model_dump()
-        new_settings["ollama_library"]["user_group"] = (owner["user"]["name"], owner["group"]["name"])
-        new_settings["ollama_library"]["models_path"] = relevant_info["likely_models_path"]
+        new_settings["ollama_library"]["user_group"] = (
+            owner["user"]["name"],
+            owner["group"]["name"],
+        )
+        new_settings["ollama_library"]["models_path"] = relevant_info[
+            "likely_models_path"
+        ]
 
         for entry in new_settings["ollama_library"]:
             value = new_settings["ollama_library"][entry]
             current_value = current_settings.ollama_library.__dict__[entry]
             if current_value != value:
-                logger.info(f"Change value of {entry} from {current_value} to {value}. Updating the `conf/settings.json` may be nessesary.")
+                logger.info(
+                    f"Change value of {entry} from {current_value} to {value}. Updating the `conf/settings.json` may be nessesary."
+                )
 
         # we do not update anything without the user consent
         return current_settings.model_dump_json()
