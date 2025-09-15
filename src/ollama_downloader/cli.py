@@ -218,9 +218,7 @@ class OllamaDownloaderCLIApp:
         new_model_path = relevant_info["likely_models_path"]
         if model_path != new_model_path:
             logger.warning(
-                "Changing models install path from {} to {}".format(
-                    model_path, new_model_path
-                )
+                f"Changing models install path from {model_path} to {new_model_path}"
             )
             self._model_downloader.settings.ollama_library.models_path = new_model_path
             self._model_downloader.settings.save_settings(
