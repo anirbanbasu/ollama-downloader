@@ -245,7 +245,7 @@ During the process of downloading, the following are performed.
 2. Validation of the SHA256 hash of each downloaded BLOB.
 3. Post-download verification with the Ollama server specified by `ollama_server.url` in the configuration that the downloaded model is available.
 
-As an example, run `uv run od model-download unsloth/gemma-3-270m-it-GGUF:Q4_K_M` to download the `gemma-3-270m-it-GGUF:Q4_K_M` model from `unsloth`, the details of which can be found at https://huggingface.co/unsloth/gemma-3-270m-it-GGUF.
+As an example, run `uv run od hf-model-download unsloth/gemma-3-270m-it-GGUF:Q4_K_M` to download the `gemma-3-270m-it-GGUF:Q4_K_M` model from `unsloth`, the details of which can be found at https://huggingface.co/unsloth/gemma-3-270m-it-GGUF.
 
 Running `uv run od hf-model-download --help` displays the following.
 
