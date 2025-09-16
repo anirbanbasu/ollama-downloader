@@ -217,7 +217,7 @@ class OllamaDownloaderCLIApp:
                 not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
                 and process.ppid() != 1
             )
-        except e:
+        except Exception as e:
             if isinstance(e, psutil.AccessDenied):
                 logger.info(
                     "Seems like you need to run this command with super-user permissions. Try `sudo`!"
