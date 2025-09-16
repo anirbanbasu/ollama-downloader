@@ -1,6 +1,5 @@
 import asyncio
 import grp
-import json
 import logging
 import os
 import platform
@@ -127,8 +126,10 @@ class OllamaDownloaderCLIApp:
 
         relevant_info["executable"] = process.exe()
         relevant_info["cmdline"] = process.cmdline()
+
+        explicit_models_dir = process.environ().get("OLLAMA_MODELS", None)
         relevant_info["model_dir_explicitly_specified"] = (
-            process.environ().get("OLLAMA_MODELS", None) is not None
+            explicit_models_dir is not None
         )
 
         relevant_info["http_proxy_specified"] = (
@@ -153,9 +154,20 @@ class OllamaDownloaderCLIApp:
                 break
         relevant_info["listening_on"] = listening_on
 
+        # FIXME: This is not a good idea, since we are including a specific check
+        # but most systems use this init system so it maybe fine.
+        systemd_service = "/etc/systemd/system/ollama.service"
+        systemd_daemon = os.path.exists(systemd_service)
+
         ollama_client = OllamaClient(host=ollama_url)
         models_list = ollama_client.list().models
-        if len(models_list) > 0:
+        if explicit_models_dir is not None:
+            relevant_info["likely_models_path"] = explicit_models_dir
+        elif systemd_daemon:
+            # https://ollama.com/install.sh :: function configure_systemd()
+            # if systemd is the init system we use the /usr/share/ollama directory for all installs
+            relevant_info["likely_models_path"] = "/usr/share/ollama/.ollama/models"
+        elif len(models_list) > 0:
             modelfile_text = ollama_client.show(models_list[0].model).modelfile
             pattern = re.compile(
                 r"^\s*FROM\s+(.+?)(?:\s*#.*)?$", re.IGNORECASE | re.MULTILINE
@@ -186,8 +198,10 @@ class OllamaDownloaderCLIApp:
                         },
                     }
         else:
+            # We could select ~/.ollama/models as a default directory
+            relevant_info["likely_models_path"] = "~/.ollama/models"
             logger.warning(
-                "No models found in the running Ollama instance. Models path cannot be computed."
+                "No models found in the running Ollama instance. Models path cannot be computed. Using defaults."
             )
 
         open_files = []
@@ -195,13 +209,41 @@ class OllamaDownloaderCLIApp:
             open_files.append(file.path)
         relevant_info["ollama_open_files"] = open_files
 
-        relevant_info["ollama_is_likely_daemon"] = (
-            process.terminal() is None
-            and process.status() not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
-            and process.ppid() != 1
-        )
+        # auto-config does not need to fail if we can't detect if ollama is a daemon or not
+        try:
+            relevant_info["ollama_is_likely_daemon"] = systemd_daemon or (
+                process.terminal() is None
+                and process.status()
+                not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
+                and process.ppid() != 1
+            )
+        except Exception as e:
+            if isinstance(e, psutil.AccessDenied):
+                logger.info(
+                    "Seems like you need to run this command with super-user permissions. Try `sudo`!"
+                )
 
-        return json.dumps(relevant_info)
+        current_settings = self._model_downloader.settings
+
+        new_settings = current_settings.model_dump()
+        new_settings["ollama_library"]["user_group"] = (
+            owner["user"]["name"],
+            owner["group"]["name"],
+        )
+        new_settings["ollama_library"]["models_path"] = relevant_info[
+            "likely_models_path"
+        ]
+
+        for entry in new_settings["ollama_library"]:
+            value = new_settings["ollama_library"][entry]
+            current_value = current_settings.ollama_library.__dict__[entry]
+            if current_value != value:
+                logger.info(
+                    f"Change value of {entry} from {current_value} to {value}. Updating the `conf/settings.json` may be nessesary."
+                )
+
+        # we do not update anything without the user consent
+        return current_settings.model_dump_json()
 
     async def run_auto_config(self):
         try:
