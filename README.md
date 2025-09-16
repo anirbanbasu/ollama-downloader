@@ -131,6 +131,7 @@ Usage: od [OPTIONS] COMMAND [ARGS]...
 │                     Face model that can be downloaded into Ollama. Note     │
 │                     that these are NOT the same as Hugging Face model tags. │
 │ hf-model-download   Downloads a specified Hugging Face model.               │
+│ auto-config         Display an automatically inferred configuration.        │
 ╰─────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -315,6 +316,23 @@ Usage: od hf-list-tags [OPTIONS] MODEL_IDENTIFIER
 ╭─ Options ───────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                 │
 ╰─────────────────────────────────────────────────────────────────────────────╯
+```
+
+### `auto-config`
+
+The `auto-config` command simply displays the current configuration from the settings file in the configurations directory, if it exists. If it does not exist, it creates that file with the default settings and shows the content of that file.
+
+Running `uv run od auto-config --help` displays the following.
+
+```bash
+Usage: od auto-config [OPTIONS]
+
+ Display an automatically inferred configuration.
+
+
+╭─ Options ────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                  │
+╰──────────────────────────────────────────────────────────────╯
 ```
 
 ## Testing, coverage and profiling
