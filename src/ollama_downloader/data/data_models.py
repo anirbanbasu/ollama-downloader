@@ -125,7 +125,7 @@ class AppSettings(BaseModel):
         except FileNotFoundError:
             logger.error(f"Configuration file {settings_file} not found.")
         except Exception as e:
-            logger.exception(f"Error loading settings from {settings_file}. {e}")
+            logger.error(f"Error loading settings from {settings_file}. {e}")
         return None
 
     @staticmethod
@@ -150,7 +150,7 @@ class AppSettings(BaseModel):
             logger.info(f"Settings saved to {settings_file}")
             return True
         except Exception as e:
-            logger.exception(f"Error saving settings to {settings_file}. {e}")
+            logger.error(f"Error saving settings to {settings_file}. {e}")
             return False
 
 

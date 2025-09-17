@@ -116,23 +116,23 @@ Usage: od [OPTIONS] COMMAND [ARGS]...
 
  A command-line interface for the Ollama downloader.
 
-
-╭─ Options ───────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                 │
-╰─────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ──────────────────────────────────────────────────────────────────╮
-│ show-config         Shows the application configuration as JSON.            │
-│ list-models         Lists all available models in the Ollama library.       │
-│ list-tags           Lists all tags for a specific model.                    │
-│ model-download      Downloads a specific Ollama model with the given tag.   │
-│ hf-list-models      Lists available models from Hugging Face that can be    │
-│                     downloaded into Ollama.                                 │
-│ hf-list-tags        Lists all available quantisations as tags for a Hugging │
-│                     Face model that can be downloaded into Ollama. Note     │
-│                     that these are NOT the same as Hugging Face model tags. │
-│ hf-model-download   Downloads a specified Hugging Face model.               │
-│ auto-config         Display an automatically inferred configuration.        │
-╰─────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────╮
+│ show-config         Shows the application configuration as JSON.                            │
+│ auto-config         Display an automatically inferred configuration.                        │
+│ list-models         Lists all available models in the Ollama library. If pagination options │
+│                     are not provided, all models will be listed.                            │
+│ list-tags           Lists all tags for a specific model.                                    │
+│ model-download      Downloads a specific Ollama model with the given tag.                   │
+│ hf-list-models      Lists available models from Hugging Face that can be downloaded into    │
+│                     Ollama.                                                                 │
+│ hf-list-tags        Lists all available quantisations as tags for a Hugging Face model that │
+│                     can be downloaded into Ollama. Note that these are NOT the same as      │
+│                     Hugging Face model tags.                                                │
+│ hf-model-download   Downloads a specified Hugging Face model.                               │
+╰─────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 You can also use `--help` on each command to see command-specific help.

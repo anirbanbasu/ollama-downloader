@@ -36,6 +36,8 @@ class OllamaDownloaderCLIApp:
         # Set up signal handlers for graceful shutdown
         for sig in [signal.SIGINT, signal.SIGTERM]:
             signal.signal(sig, self._interrupt_handler)
+        self._model_downloader: OllamaModelDownloader = None
+        self._hf_model_downloader: HuggingFaceModelDownloader = None
 
     def _interrupt_handler(self, signum: int, frame: FrameType | None):
         logger.warning("Interrupt signal received, performing clean shutdown")
@@ -45,8 +47,10 @@ class OllamaDownloaderCLIApp:
 
     def _initialize(self):
         logger.debug("Initializing downloaders...")
-        self._model_downloader = OllamaModelDownloader()
-        self._hf_model_downloader = HuggingFaceModelDownloader()
+        if not self._model_downloader:
+            self._model_downloader = OllamaModelDownloader()
+        if not self._hf_model_downloader:
+            self._hf_model_downloader = HuggingFaceModelDownloader()
 
     def _cleanup(self):
         logger.debug("Running cleanup...")
@@ -376,6 +380,13 @@ def show_config():
 
 
 @app.command()
+def auto_config():
+    """Display an automatically inferred configuration."""
+    app_handler = OllamaDownloaderCLIApp()
+    asyncio.run(app_handler.run_auto_config())
+
+
+@app.command()
 def list_models(
     page: Annotated[
         Optional[int],
@@ -476,13 +487,6 @@ def hf_model_download(
     """Downloads a specified Hugging Face model."""
     app_handler = OllamaDownloaderCLIApp()
     asyncio.run(app_handler.run_hf_model_download(user_repo_quant=user_repo_quant))
-
-
-@app.command()
-def auto_config():
-    """Display an automatically inferred configuration."""
-    app_handler = OllamaDownloaderCLIApp()
-    asyncio.run(app_handler.run_auto_config())
 
 
 def main():
