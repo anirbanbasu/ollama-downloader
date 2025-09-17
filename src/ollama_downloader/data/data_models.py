@@ -1,7 +1,8 @@
 import logging
 import os
-from pydantic import BaseModel, Field
-from typing import ClassVar, Optional, Self, Tuple
+from pathlib import Path
+from pydantic import AfterValidator, BaseModel, Field, HttpUrl
+from typing import Annotated, ClassVar, Optional, Self, Tuple
 
 from environs import env
 
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class OllamaServer(BaseModel):
-    url: str = Field(
+    url: Annotated[str, AfterValidator(HttpUrl), AfterValidator(str)] = Field(
         default="http://localhost:11434/",
         description="URL of the Ollama server.",
     )
@@ -26,15 +27,28 @@ class OllamaServer(BaseModel):
 
 
 class OllamaLibrary(BaseModel):
-    models_path: str = Field(
+    @staticmethod
+    def validate_path_as_dir(path_str: str) -> str:
+        p = Path(os.path.expanduser(path_str))
+        if not p.exists():
+            raise ValueError(f"Path '{path_str}' does not exist.")
+        if not p.is_dir():
+            raise ValueError(f"Path '{path_str}' is not a valid directory.")
+        return path_str
+
+    models_path: Annotated[str, AfterValidator(validate_path_as_dir)] = Field(
         default="~/.ollama/models",
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
     )
-    registry_base_url: Optional[str] = Field(
+    registry_base_url: Annotated[
+        Optional[str], AfterValidator(HttpUrl), AfterValidator(str)
+    ] = Field(
         default="https://registry.ollama.ai/v2/library/",
-        description="URL of the remote registry for Ollama models. If not provided, local storage will be used.",
+        description="URL of the remote registry for Ollama models.",
     )
-    library_base_url: Optional[str] = Field(
+    library_base_url: Annotated[
+        Optional[str], AfterValidator(HttpUrl), AfterValidator(str)
+    ] = Field(
         default="https://ollama.com/library/",
         description="Base URL for the Ollama library. This is used to web scrape model metadata.",
     )
@@ -168,6 +182,7 @@ class ImageManifestLayerEntry(BaseModel):
         ...,
         description="The digest of the layer, used for content addressing.",
     )
+    # Note that these URLs may not be present in all manifests and may not be possible to validate as HttpUrls.
     urls: Optional[list[str]] = Field(
         default=None,
         description="Optional list of URLs where the layer can be downloaded from. This is useful for layers that are hosted on multiple locations.",
