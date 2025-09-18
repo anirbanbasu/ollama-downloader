@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 from pydantic import AfterValidator, BaseModel, Field, HttpUrl
-from typing import Annotated, ClassVar, Optional, Self, Tuple
+from typing import Annotated, ClassVar, Optional, Tuple
 
 from environs import env
 
@@ -76,7 +76,7 @@ class AppSettings(BaseModel):
         description="Settings for accessing the Ollama library and storing locally.",
     )
 
-    _instance: ClassVar[Self | None] = None
+    _instance: ClassVar = None
 
     def __new__(cls: type["AppSettings"]) -> "AppSettings":
         if cls._instance is None:
