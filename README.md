@@ -154,6 +154,23 @@ Usage: od show-config [OPTIONS]
 ╰──────────────────────────────────────────────────────────────╯
 ```
 
+### `auto-config`
+
+The `auto-config` command is **experimental** to display the inferred configuration for the variables `ollama_server.url`, `ollama_library.models_path` and `ollama_library.user_group`.
+
+Running `uv run od auto-config --help` displays the following.
+
+```bash
+Usage: od auto-config [OPTIONS]
+
+ Display an automatically inferred configuration.
+
+
+╭─ Options ────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                  │
+╰──────────────────────────────────────────────────────────────╯
+```
+
 ### `list-models`
 
 The `list-models` command displays an up-to-date list of models that exist in the Ollama library. _Note that unlike the pagination options for Hugging Face, the entire model list from the Ollama library is fetched and then pagination is applied locally_.
@@ -316,23 +333,6 @@ Usage: od hf-list-tags [OPTIONS] MODEL_IDENTIFIER
 ╭─ Options ───────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                 │
 ╰─────────────────────────────────────────────────────────────────────────────╯
-```
-
-### `auto-config`
-
-The `auto-config` command simply displays the current configuration from the settings file in the configurations directory, if it exists. If it does not exist, it creates that file with the default settings and shows the content of that file.
-
-Running `uv run od auto-config --help` displays the following.
-
-```bash
-Usage: od auto-config [OPTIONS]
-
- Display an automatically inferred configuration.
-
-
-╭─ Options ────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                  │
-╰──────────────────────────────────────────────────────────────╯
 ```
 
 ## Testing, coverage and profiling
