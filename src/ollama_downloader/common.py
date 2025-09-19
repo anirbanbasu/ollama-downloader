@@ -1,8 +1,12 @@
 import grp
 import logging
+import os
+import re
 from typing import ClassVar
 import platform
 import psutil
+
+from ollama import Client as OllamaClient
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +95,7 @@ class OllamaSystemInfo:
                 except psutil.NoSuchProcess:
                     ...
                 except psutil.AccessDenied:
-                    logger.debug(
+                    logger.warning(
                         f"Environment variables of process {proc.name()} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name()} is running as a different user."
                     )
         return self._process_id != -1
@@ -108,7 +112,7 @@ class OllamaSystemInfo:
             except psutil.NoSuchProcess:
                 ...
             except psutil.AccessDenied:
-                logger.debug(
+                logger.warning(
                     f"Parent process ID of process {proc.name} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name} is running as a service."
                 )
         return self._parent_process_id
@@ -155,7 +159,7 @@ class OllamaSystemInfo:
             except psutil.NoSuchProcess:
                 ...
             except psutil.AccessDenied:
-                logger.debug(
+                logger.warning(
                     f"Parent process ID of process {proc.name} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name} is running as a different user."
                 )
         return self._listening_on
@@ -164,9 +168,42 @@ class OllamaSystemInfo:
         """Get the path to the models directory used by Ollama."""
         self._models_dir_path = self.process_env_vars.get("OLLAMA_MODELS", "")
         if self._models_dir_path == "":
-            raise NotImplementedError("This method has been partly implemented only.")
+            # raise NotImplementedError("This method has been partly implemented only.")
+            if self.infer_listening_on() != "":
+                ollama_client = OllamaClient(host=self._listening_on)
+                models_list = ollama_client.list().models
+                if len(models_list) > 0:
+                    modelfile_text = ollama_client.show(models_list[0].model).modelfile
+                    pattern = re.compile(
+                        r"^\s*FROM\s+(.+?)(?:\s*#.*)?$", re.IGNORECASE | re.MULTILINE
+                    )
+                    match = pattern.search(modelfile_text)
+                    if match:
+                        model_blob_path = match.group(1).strip()
+                        likely_models_dir = str(
+                            os.path.dirname(os.path.dirname(model_blob_path))
+                        )
+                        self._models_dir_path = likely_models_dir.replace(
+                            os.path.expanduser("~"), "~"
+                        )
+                else:
+                    logger.warning(
+                        "No models are currently installed in Ollama. Cannot infer the models directory path."
+                    )
         return self._models_dir_path
 
     def is_likely_daemon(self) -> bool:
         """Infer if the Ollama process is likely running as a daemon/service."""
-        raise NotImplementedError("This method is not implemented yet.")
+        self.get_parent_process_id()
+        if self._parent_process_id not in [-1, 1]:
+            self._likely_daemon = False
+        else:
+            proc = psutil.Process(self._process_id)
+            if (
+                proc.username().lower() in ["ollama", "root"]
+                and proc.terminal() is None
+            ):
+                self._likely_daemon = True
+            else:
+                self._likely_daemon = False
+        return self._likely_daemon

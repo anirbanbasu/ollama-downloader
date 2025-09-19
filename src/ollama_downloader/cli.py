@@ -15,6 +15,8 @@ from rich import print as print
 from rich import print_json
 import psutil
 
+from ollama_downloader.common import OllamaSystemInfo
+from ollama_downloader.data.data_models import AppSettings
 from ollama_downloader.downloader.ollama_model_downloader import OllamaModelDownloader
 from ollama_downloader.downloader.hf_model_downloader import HuggingFaceModelDownloader
 
@@ -69,7 +71,6 @@ class OllamaDownloaderCLIApp:
         try:
             self._initialize()
             result = await self._show_config()
-            # TODO: Should we pretty-print the JSON with indentation here or with the Pydantic's `model_dump_json`?
             print_json(json=result)
         except Exception as e:
             logger.error(f"Error in showing config. {e}")
@@ -77,6 +78,31 @@ class OllamaDownloaderCLIApp:
             self._cleanup()
 
     async def _auto_config(self):
+        logger.warning(
+            "Automatic configuration is an experimental feature. Its output maybe incorrect!"
+        )
+        system_info = OllamaSystemInfo()
+        if system_info.is_windows():
+            raise NotImplementedError(
+                "Automatic configuration is not supported on Windows yet."
+            )
+        inferred_settings = AppSettings()
+        inferred_settings.ollama_server.url = system_info.infer_listening_on()
+        inferred_settings.ollama_library.models_path = (
+            system_info.infer_models_dir_path()
+        )
+        if system_info.is_likely_daemon():
+            if system_info.is_macos():
+                logger.warning(
+                    "Automatic configuration on macOS maybe flawed if Ollama is configured to run as a background service."
+                )
+            inferred_settings.ollama_library.user_group = (
+                system_info.get_process_owner()[0],
+                system_info.get_process_owner()[2],
+            )
+        return inferred_settings.model_dump_json()
+
+    async def old_auto_config(self):
         logger.warning(
             "Automatic configuration is a future experimental idea, which has not been implemented yet. Stay tuned!"
         )

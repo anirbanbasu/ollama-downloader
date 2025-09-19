@@ -1,6 +1,5 @@
 import os
 import httpx
-import pytest
 from ollama_downloader.common import OllamaSystemInfo
 
 
@@ -38,6 +37,9 @@ class TestOllamaSystemInfo:
         assert owner_info[2] != ""  # groupname should not be empty
         assert isinstance(owner_info[3], int)  # gid
         assert owner_info[3] > 0  # gid should be a positive integer
+        assert (
+            owner_info[0] != "ollama" and owner_info[2] != "ollama"
+        )  # Assuming Ollama is not running as user/group "ollama"
 
     def test_get_parent_process_id(self):
         system_info = OllamaSystemInfo()
@@ -50,7 +52,7 @@ class TestOllamaSystemInfo:
         listening_on = system_info.infer_listening_on()
         assert listening_on != ""
         # Try connecting and check the response
-        with httpx.Client(timeout=5.0) as client:
+        with httpx.Client(timeout=30.0) as client:
             response = client.get(listening_on)
             assert response.status_code == 200
             assert response.text == "Ollama is running"
@@ -61,16 +63,16 @@ class TestOllamaSystemInfo:
         # Assuming that the environment variable "OLLAMA_MODELS" has not been passed to the Ollama process
         assert system_info.is_model_dir_env_var_set() is False
 
-    @pytest.mark.skip(reason="This feature is currently under development.")
+    # @pytest.mark.skip(reason="This feature is currently under development.")
     def test_is_likely_daemon(self):
         system_info = OllamaSystemInfo()
         assert system_info.is_likely_daemon() is False
 
-    @pytest.mark.skip(reason="This feature is currently under development.")
+    # @pytest.mark.skip(reason="This feature is currently under development.")
     def test_infer_models_dir_path(self):
         system_info = OllamaSystemInfo()
-        models_path = system_info.infer_models_dir_path()
-        assert models_path is not None
+        models_path = os.path.expanduser(system_info.infer_models_dir_path())
+        assert models_path is not None and models_path != ""
         # Check that the inferred models path exists and is a directory
         assert os.path.exists(models_path)
         assert os.path.isdir(models_path)

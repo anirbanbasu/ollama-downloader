@@ -32,6 +32,14 @@ class TestTyperCalls:
         # This is a bit fragile, as the indentation matching depends on the print_json implementation of Rich, which defaults to 2.
         assert settings.model_dump_json(indent=2) == result.output.strip()
 
+    def test_auto_config(self, runner):
+        """
+        Test the 'auto-config' command of the CLI.
+        """
+        result = runner.invoke(app=app, args=["auto-config"])
+        assert result.exit_code == 0
+        assert AppSettings.model_validate_json(result.output.strip()) is not None
+
     def test_list_models(self, runner):
         """
         Test the 'list-models' command of the CLI.
