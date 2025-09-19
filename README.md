@@ -120,7 +120,7 @@ Usage: od [OPTIONS] COMMAND [ARGS]...
 ╰─────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ──────────────────────────────────────────────────────────────────────────────────╮
 │ show-config         Shows the application configuration as JSON.                            │
-│ auto-config         Display an automatically inferred configuration.                        │
+│ auto-config         Displays an automatically inferred configuration.                       │
 │ list-models         Lists all available models in the Ollama library. If pagination options │
 │                     are not provided, all models will be listed.                            │
 │ list-tags           Lists all tags for a specific model.                                    │

@@ -381,7 +381,7 @@ def show_config():
 
 @app.command()
 def auto_config():
-    """Display an automatically inferred configuration."""
+    """Displays an automatically inferred configuration."""
     app_handler = OllamaDownloaderCLIApp()
     asyncio.run(app_handler.run_auto_config())
 
