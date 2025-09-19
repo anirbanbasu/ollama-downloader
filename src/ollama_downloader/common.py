@@ -52,14 +52,14 @@ class OllamaSystemInfo:
     def is_windows(self) -> bool:
         """Check if the operating system is Windows."""
         if self._os_name == "":
-            self._os_name = platform.system().lower()
-        return self._os_name == "windows"
+            self._os_name = platform.system()
+        return self._os_name.lower() == "windows"
 
     def is_macos(self) -> bool:
         """Check if the operating system is macOS."""
         if self._os_name == "":
-            self._os_name = platform.system().lower()
-        return self._os_name == "darwin"
+            self._os_name = platform.system()
+        return self._os_name.lower() == "darwin"
 
     def is_running(self) -> bool:
         """
@@ -84,11 +84,15 @@ class OllamaSystemInfo:
                     # FIXME: These will not capture any variables that the Ollama process sets after it starts.
                     # For example, "OLLAMA_MODELS" is not captured this way unless explicitly passed.
                     self.process_env_vars.update(proc.environ())
+                    if len(self.process_env_vars) > 0:
+                        logger.debug(
+                            f"{len(self.process_env_vars)} environment variables of process {proc.name()} ({self._process_id}) were obtained."
+                        )
                 except psutil.NoSuchProcess:
                     ...
                 except psutil.AccessDenied:
                     logger.debug(
-                        f"Environment variables of {proc.name()} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name()} is running as a different user."
+                        f"Environment variables of process {proc.name()} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name()} is running as a different user."
                     )
         return self._process_id != -1
 
@@ -105,7 +109,7 @@ class OllamaSystemInfo:
                 ...
             except psutil.AccessDenied:
                 logger.debug(
-                    f"Parent process ID of {proc.name} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name} is running as a service."
+                    f"Parent process ID of process {proc.name} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name} is running as a service."
                 )
         return self._parent_process_id
 
@@ -119,9 +123,18 @@ class OllamaSystemInfo:
                 gid = proc.gids().real if hasattr(proc, "gids") else -1
                 groupname = grp.getgrgid(gid).gr_name if gid != -1 else ""
                 self._process_owner = (username, uid, groupname, gid)
+                logger.debug(
+                    f"Owner of process {proc.name()} ({self._process_id}): {self._process_owner}"
+                )
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 ...
         return self._process_owner
+
+    def is_model_dir_env_var_set(self) -> bool:
+        """Check if the environment variable 'OLLAMA_MODELS' is set in the Ollama process."""
+        if self.process_env_vars:
+            return "OLLAMA_MODELS" in self.process_env_vars
+        return False
 
     def infer_listening_on(self) -> str | None:
         """Get the address and port the Ollama process is listening on."""
@@ -139,13 +152,20 @@ class OllamaSystemInfo:
                         self._listening_on = f"http://{laddr}"
                         # Just take the first listening address
                         break
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
+            except psutil.NoSuchProcess:
                 ...
+            except psutil.AccessDenied:
+                logger.debug(
+                    f"Parent process ID of process {proc.name} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name} is running as a different user."
+                )
         return self._listening_on
 
-    def infer_models_dir_path(self) -> str | None:
+    def infer_models_dir_path(self) -> str:
         """Get the path to the models directory used by Ollama."""
-        raise NotImplementedError("This method is not implemented yet.")
+        self._models_dir_path = self.process_env_vars.get("OLLAMA_MODELS", "")
+        if self._models_dir_path == "":
+            raise NotImplementedError("This method has been partly implemented only.")
+        return self._models_dir_path
 
     def is_likely_daemon(self) -> bool:
         """Infer if the Ollama process is likely running as a daemon/service."""
