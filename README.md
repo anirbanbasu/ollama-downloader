@@ -19,7 +19,7 @@ People have been facing this for a variety of unrelated reasons and have found s
 
 _Hence, this tool – an automation of that manual process_!
 
-Do note that, as of August 24, 2025, this Ollama downloader can also _download supported models from Hugging Face_!
+This Ollama downloader can also _download supported models from Hugging Face_!
 
 ### Apart from `ollama pull`
 
