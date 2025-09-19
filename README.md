@@ -67,7 +67,6 @@ Let's explore the configuration in details. The default content is as follows.
     },
     "ollama_library": {
         "models_path": "~/.ollama/models",
-        "models_tags_cache": "models_tags.json",
         "registry_base_url": "https://registry.ollama.ai/v2/library/",
         "library_base_url": "https://ollama.com/library",
         "verify_ssl": true,
