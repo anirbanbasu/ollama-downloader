@@ -86,19 +86,27 @@ class OllamaDownloaderCLIApp:
             raise NotImplementedError(
                 "Automatic configuration is not supported on Windows yet."
             )
-        inferred_settings = AppSettings()
-        inferred_settings.ollama_server.url = system_info.infer_listening_on()
-        inferred_settings.ollama_library.models_path = (
-            system_info.infer_models_dir_path()
+        super_user_needed = False
+        super_user_needed = super_user_needed or system_info.infer_listening_on() in [
+            None,
+            "",
+        ]
+        super_user_needed = (
+            super_user_needed or system_info.infer_models_dir_path() in [None, ""]
         )
+        if super_user_needed:
+            return {}
+        inferred_settings = AppSettings()
+        inferred_settings.ollama_server.url = system_info._listening_on
+        inferred_settings.ollama_library.models_path = system_info._models_dir_path
         if system_info.is_likely_daemon():
             if system_info.is_macos():
                 logger.warning(
                     "Automatic configuration on macOS maybe flawed if Ollama is configured to run as a background service."
                 )
             inferred_settings.ollama_library.user_group = (
-                system_info.get_process_owner()[0],
-                system_info.get_process_owner()[2],
+                system_info._process_owner[0],
+                system_info._process_owner[2],
             )
         return inferred_settings.model_dump_json()
 
@@ -277,9 +285,10 @@ class OllamaDownloaderCLIApp:
 
     async def run_auto_config(self):
         try:
-            self._initialize()
+            # self._initialize()
             result = await self._auto_config()
-            print_json(json=result)
+            if result != {}:
+                print_json(json=result)
         except Exception as e:
             logger.error(f"Error in generating automatic config. {e}")
             if isinstance(e, psutil.AccessDenied):

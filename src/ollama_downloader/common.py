@@ -90,14 +90,18 @@ class OllamaSystemInfo:
                     self.process_env_vars.update(proc.environ())
                     if len(self.process_env_vars) > 0:
                         logger.debug(
-                            f"{len(self.process_env_vars)} environment variables of process {proc.name()} ({self._process_id}) were obtained."
+                            f"{len(self.process_env_vars)} environment variables of process {proc.name()} ({self._process_id}, {proc.status()}) were obtained."
                         )
                 except psutil.NoSuchProcess:
                     ...
                 except psutil.AccessDenied:
                     logger.warning(
-                        f"Environment variables of process {proc.name()} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name()} is running as a different user."
+                        f"Environment variables of process {proc.name()} ({self._process_id}, {proc.status()}) cannot be retrieved. Run auto-config as super-user."
                     )
+            else:
+                logger.warning(
+                    "Ollama process not found. Maybe, it is not installed or it is not running."
+                )
         return self._process_id != -1
 
     def get_parent_process_id(self) -> int:
@@ -113,7 +117,7 @@ class OllamaSystemInfo:
                 ...
             except psutil.AccessDenied:
                 logger.warning(
-                    f"Parent process ID of process {proc.name} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name} is running as a service."
+                    f"Parent process ID of process {proc.name()} ({self._process_id}, {proc.status()}) cannot be retrieved. Run auto-config as super-user."
                 )
         return self._parent_process_id
 
@@ -128,7 +132,7 @@ class OllamaSystemInfo:
                 groupname = grp.getgrgid(gid).gr_name if gid != -1 else ""
                 self._process_owner = (username, uid, groupname, gid)
                 logger.debug(
-                    f"Owner of process {proc.name()} ({self._process_id}): {self._process_owner}"
+                    f"Owner of process {proc.name()} ({self._process_id}, {proc.status()}): {self._process_owner}"
                 )
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 ...
@@ -160,7 +164,7 @@ class OllamaSystemInfo:
                 ...
             except psutil.AccessDenied:
                 logger.warning(
-                    f"Parent process ID of process {proc.name} ({self._process_id}) cannot be retrieved. Perhaps, {proc.name} is running as a different user."
+                    f"Parent process ID of process {proc.name()} ({self._process_id}, {proc.status()}) cannot be retrieved. Run auto-config as super-user."
                 )
         return self._listening_on
 

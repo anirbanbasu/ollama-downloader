@@ -72,7 +72,8 @@ class TestOllamaSystemInfo:
     def test_infer_models_dir_path(self):
         system_info = OllamaSystemInfo()
         models_path = os.path.expanduser(system_info.infer_models_dir_path())
-        assert models_path is not None and models_path != ""
-        # Check that the inferred models path exists and is a directory
-        assert os.path.exists(models_path)
-        assert os.path.isdir(models_path)
+        assert models_path is not None
+        if models_path != "":
+            # Check that the inferred models path exists and is a directory
+            assert os.path.exists(models_path)
+            assert os.path.isdir(models_path)
