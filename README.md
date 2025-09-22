@@ -157,6 +157,8 @@ Usage: od show-config [OPTIONS]
 
 The `auto-config` command is **experimental** to display the inferred configuration for the variables `ollama_server.url`, `ollama_library.models_path` and `ollama_library.user_group`.
 
+_Note that the `auto-config` output may be wrong. Use with caution!_
+
 Running `uv run od auto-config --help` displays the following.
 
 ```bash
