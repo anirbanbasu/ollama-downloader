@@ -41,13 +41,17 @@ class TestDataModels:
                 OllamaServer(url=url)
                 assert False, f"Expected validation error for URL: {url}"
             except Exception as e:
-                assert "ValidationError" or "AssertionError" in str(type(e))
+                assert "ValidationError" in str(type(e)) or "AssertionError" in str(
+                    type(e)
+                )
 
             try:
                 OllamaLibrary(library_base_url=url, registry_base_url=url)
                 assert False, f"Expected validation error for URL: {url}"
             except Exception as e:
-                assert "ValidationError" or "AssertionError" in str(type(e))
+                assert "ValidationError" in str(type(e)) or "AssertionError" in str(
+                    type(e)
+                )
 
     def test_app_settings_invalid_path(self):
         """
@@ -64,4 +68,6 @@ class TestDataModels:
                 OllamaLibrary(models_path=path)
                 assert False, f"Expected validation error for path: {path}"
             except Exception as e:
-                assert "ValidationError" or "AssertionError" in str(type(e))
+                assert "ValidationError" in str(type(e)) or "AssertionError" in str(
+                    type(e)
+                )
