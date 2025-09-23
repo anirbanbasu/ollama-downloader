@@ -40,17 +40,17 @@ class OllamaLibrary(BaseModel):
         default="~/.ollama/models",
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
     )
-    registry_base_url: Annotated[
-        Optional[str], AfterValidator(HttpUrl), AfterValidator(str)
-    ] = Field(
-        default="https://registry.ollama.ai/v2/library/",
-        description="URL of the remote registry for Ollama models.",
+    registry_base_url: Annotated[str, AfterValidator(HttpUrl), AfterValidator(str)] = (
+        Field(
+            default="https://registry.ollama.ai/v2/library/",
+            description="URL of the remote registry for Ollama models.",
+        )
     )
-    library_base_url: Annotated[
-        Optional[str], AfterValidator(HttpUrl), AfterValidator(str)
-    ] = Field(
-        default="https://ollama.com/library/",
-        description="Base URL for the Ollama library. This is used to web scrape model metadata.",
+    library_base_url: Annotated[str, AfterValidator(HttpUrl), AfterValidator(str)] = (
+        Field(
+            default="https://ollama.com/library/",
+            description="Base URL for the Ollama library. This is used to web scrape model metadata.",
+        )
     )
     verify_ssl: Optional[bool] = Field(
         default=True,
