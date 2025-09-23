@@ -15,6 +15,8 @@ from rich import print as print
 from rich import print_json
 import psutil
 
+from ollama_downloader.common import OllamaSystemInfo
+from ollama_downloader.data.data_models import AppSettings
 from ollama_downloader.downloader.ollama_model_downloader import OllamaModelDownloader
 from ollama_downloader.downloader.hf_model_downloader import HuggingFaceModelDownloader
 
@@ -36,6 +38,8 @@ class OllamaDownloaderCLIApp:
         # Set up signal handlers for graceful shutdown
         for sig in [signal.SIGINT, signal.SIGTERM]:
             signal.signal(sig, self._interrupt_handler)
+        self._model_downloader: OllamaModelDownloader = None
+        self._hf_model_downloader: HuggingFaceModelDownloader = None
 
     def _interrupt_handler(self, signum: int, frame: FrameType | None):
         logger.warning("Interrupt signal received, performing clean shutdown")
@@ -45,8 +49,10 @@ class OllamaDownloaderCLIApp:
 
     def _initialize(self):
         logger.debug("Initializing downloaders...")
-        self._model_downloader = OllamaModelDownloader()
-        self._hf_model_downloader = HuggingFaceModelDownloader()
+        if not self._model_downloader:
+            self._model_downloader = OllamaModelDownloader()
+        if not self._hf_model_downloader:
+            self._hf_model_downloader = HuggingFaceModelDownloader()
 
     def _cleanup(self):
         logger.debug("Running cleanup...")
@@ -65,7 +71,6 @@ class OllamaDownloaderCLIApp:
         try:
             self._initialize()
             result = await self._show_config()
-            # TODO: Should we pretty-print the JSON with indentation here or with the Pydantic's `model_dump_json`?
             print_json(json=result)
         except Exception as e:
             logger.error(f"Error in showing config. {e}")
@@ -73,6 +78,39 @@ class OllamaDownloaderCLIApp:
             self._cleanup()
 
     async def _auto_config(self):
+        logger.warning(
+            "Automatic configuration is an experimental feature. Its output maybe incorrect!"
+        )
+        system_info = OllamaSystemInfo()
+        if system_info.is_windows():
+            raise NotImplementedError(
+                "Automatic configuration is not supported on Windows yet."
+            )
+        super_user_needed = False
+        super_user_needed = super_user_needed or system_info.infer_listening_on() in [
+            None,
+            "",
+        ]
+        super_user_needed = (
+            super_user_needed or system_info.infer_models_dir_path() in [None, ""]
+        )
+        if super_user_needed:
+            return {}
+        inferred_settings = AppSettings()
+        inferred_settings.ollama_server.url = system_info.listening_on
+        inferred_settings.ollama_library.models_path = system_info.models_dir_path
+        if system_info.is_likely_daemon():
+            if system_info.is_macos():
+                logger.warning(
+                    "Automatic configuration on macOS maybe flawed if Ollama is configured to run as a background service."
+                )
+            inferred_settings.ollama_library.user_group = (
+                system_info.process_owner[0],
+                system_info.process_owner[2],
+            )
+        return inferred_settings.model_dump_json()
+
+    async def old_auto_config(self):
         logger.warning(
             "Automatic configuration is a future experimental idea, which has not been implemented yet. Stay tuned!"
         )
@@ -247,9 +285,10 @@ class OllamaDownloaderCLIApp:
 
     async def run_auto_config(self):
         try:
-            self._initialize()
+            # self._initialize()
             result = await self._auto_config()
-            print_json(json=result)
+            if result != {}:
+                print_json(json=result)
         except Exception as e:
             logger.error(f"Error in generating automatic config. {e}")
             if isinstance(e, psutil.AccessDenied):
@@ -376,6 +415,13 @@ def show_config():
 
 
 @app.command()
+def auto_config():
+    """Displays an automatically inferred configuration."""
+    app_handler = OllamaDownloaderCLIApp()
+    asyncio.run(app_handler.run_auto_config())
+
+
+@app.command()
 def list_models(
     page: Annotated[
         Optional[int],
@@ -476,13 +522,6 @@ def hf_model_download(
     """Downloads a specified Hugging Face model."""
     app_handler = OllamaDownloaderCLIApp()
     asyncio.run(app_handler.run_hf_model_download(user_repo_quant=user_repo_quant))
-
-
-@app.command()
-def auto_config():
-    """Display an automatically inferred configuration."""
-    app_handler = OllamaDownloaderCLIApp()
-    asyncio.run(app_handler.run_auto_config())
 
 
 def main():

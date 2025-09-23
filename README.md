@@ -19,7 +19,7 @@ People have been facing this for a variety of unrelated reasons and have found s
 
 _Hence, this tool – an automation of that manual process_!
 
-Do note that, as of August 24, 2025, this Ollama downloader can also _download supported models from Hugging Face_!
+This Ollama downloader can also _download supported models from Hugging Face_!
 
 ### Apart from `ollama pull`
 
@@ -67,7 +67,6 @@ Let's explore the configuration in details. The default content is as follows.
     },
     "ollama_library": {
         "models_path": "~/.ollama/models",
-        "models_tags_cache": "models_tags.json",
         "registry_base_url": "https://registry.ollama.ai/v2/library/",
         "library_base_url": "https://ollama.com/library",
         "verify_ssl": true,
@@ -116,23 +115,23 @@ Usage: od [OPTIONS] COMMAND [ARGS]...
 
  A command-line interface for the Ollama downloader.
 
-
-╭─ Options ───────────────────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                                 │
-╰─────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ──────────────────────────────────────────────────────────────────╮
-│ show-config         Shows the application configuration as JSON.            │
-│ list-models         Lists all available models in the Ollama library.       │
-│ list-tags           Lists all tags for a specific model.                    │
-│ model-download      Downloads a specific Ollama model with the given tag.   │
-│ hf-list-models      Lists available models from Hugging Face that can be    │
-│                     downloaded into Ollama.                                 │
-│ hf-list-tags        Lists all available quantisations as tags for a Hugging │
-│                     Face model that can be downloaded into Ollama. Note     │
-│                     that these are NOT the same as Hugging Face model tags. │
-│ hf-model-download   Downloads a specified Hugging Face model.               │
-│ auto-config         Display an automatically inferred configuration.        │
-╰─────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────╮
+│ show-config         Shows the application configuration as JSON.                            │
+│ auto-config         Displays an automatically inferred configuration.                       │
+│ list-models         Lists all available models in the Ollama library. If pagination options │
+│                     are not provided, all models will be listed.                            │
+│ list-tags           Lists all tags for a specific model.                                    │
+│ model-download      Downloads a specific Ollama model with the given tag.                   │
+│ hf-list-models      Lists available models from Hugging Face that can be downloaded into    │
+│                     Ollama.                                                                 │
+│ hf-list-tags        Lists all available quantisations as tags for a Hugging Face model that │
+│                     can be downloaded into Ollama. Note that these are NOT the same as      │
+│                     Hugging Face model tags.                                                │
+│ hf-model-download   Downloads a specified Hugging Face model.                               │
+╰─────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 You can also use `--help` on each command to see command-specific help.
@@ -147,6 +146,25 @@ Running `uv run od show-config --help` displays the following.
 Usage: od show-config [OPTIONS]
 
  Shows the application configuration as JSON.
+
+
+╭─ Options ────────────────────────────────────────────────────╮
+│ --help          Show this message and exit.                  │
+╰──────────────────────────────────────────────────────────────╯
+```
+
+### `auto-config`
+
+The `auto-config` command is **experimental** to display the inferred configuration for the variables `ollama_server.url`, `ollama_library.models_path` and `ollama_library.user_group`.
+
+_Note that the `auto-config` output may be wrong. Use with caution!_
+
+Running `uv run od auto-config --help` displays the following.
+
+```bash
+Usage: od auto-config [OPTIONS]
+
+ Display an automatically inferred configuration.
 
 
 ╭─ Options ────────────────────────────────────────────────────╮
@@ -245,7 +263,7 @@ During the process of downloading, the following are performed.
 2. Validation of the SHA256 hash of each downloaded BLOB.
 3. Post-download verification with the Ollama server specified by `ollama_server.url` in the configuration that the downloaded model is available.
 
-As an example, run `uv run od model-download unsloth/gemma-3-270m-it-GGUF:Q4_K_M` to download the `gemma-3-270m-it-GGUF:Q4_K_M` model from `unsloth`, the details of which can be found at https://huggingface.co/unsloth/gemma-3-270m-it-GGUF.
+As an example, run `uv run od hf-model-download unsloth/gemma-3-270m-it-GGUF:Q4_K_M` to download the `gemma-3-270m-it-GGUF:Q4_K_M` model from `unsloth`, the details of which can be found at https://huggingface.co/unsloth/gemma-3-270m-it-GGUF.
 
 Running `uv run od hf-model-download --help` displays the following.
 
@@ -316,23 +334,6 @@ Usage: od hf-list-tags [OPTIONS] MODEL_IDENTIFIER
 ╭─ Options ───────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                 │
 ╰─────────────────────────────────────────────────────────────────────────────╯
-```
-
-### `auto-config`
-
-The `auto-config` command simply displays the current configuration from the settings file in the configurations directory, if it exists. If it does not exist, it creates that file with the default settings and shows the content of that file.
-
-Running `uv run od auto-config --help` displays the following.
-
-```bash
-Usage: od auto-config [OPTIONS]
-
- Display an automatically inferred configuration.
-
-
-╭─ Options ────────────────────────────────────────────────────╮
-│ --help          Show this message and exit.                  │
-╰──────────────────────────────────────────────────────────────╯
 ```
 
 ## Testing, coverage and profiling

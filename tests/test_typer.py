@@ -32,6 +32,15 @@ class TestTyperCalls:
         # This is a bit fragile, as the indentation matching depends on the print_json implementation of Rich, which defaults to 2.
         assert settings.model_dump_json(indent=2) == result.output.strip()
 
+    def test_auto_config(self, runner):
+        """
+        Test the 'auto-config' command of the CLI.
+        """
+        result = runner.invoke(app=app, args=["auto-config"])
+        assert result.exit_code == 0
+        if result.output.strip() != "":
+            assert AppSettings.model_validate_json(result.output.strip()) is not None
+
     def test_list_models(self, runner):
         """
         Test the 'list-models' command of the CLI.
@@ -52,9 +61,10 @@ class TestTyperCalls:
         """
         result = runner.invoke(app, ["list-tags", model_identifier := "gpt-oss"])
         assert result.exit_code == 0
-        # Expect at least two known tags to be listed for the gpt-oss model
+        # Expect at least two known tags and a cloud tag to be listed for the gpt-oss model
         assert f"{model_identifier}:latest" in result.output
         assert f"{model_identifier}:20b" in result.output
+        assert f"{model_identifier}:20b-cloud" in result.output
         result = runner.invoke(
             app=app,
             args=["list-tags", "made-up-model-that-should-not-exist"],
@@ -68,6 +78,12 @@ class TestTyperCalls:
         """
         # Let's try downloading the smallest possible model to stop the test from taking too long
         model_tag = "all-minilm:22m"
+        result = runner.invoke(app=app, args=["model-download", model_tag])
+        assert result.exit_code == 0
+        assert f"{model_tag} successfully downloaded and saved" in result.output
+
+        # Let's try downloading a cloud model
+        model_tag = "gpt-oss:20b-cloud"
         result = runner.invoke(app=app, args=["model-download", model_tag])
         assert result.exit_code == 0
         assert f"{model_tag} successfully downloaded and saved" in result.output

@@ -60,17 +60,19 @@ class HuggingFaceModelDownloader(ModelDownloader):
         files_to_be_copied.append(
             (file_model_config, manifest.config.digest, digest_model_config)
         )
-        for layer in manifest.layers:
-            logger.debug(
-                f"Layer: {layer.mediaType}, Size: {layer.size} bytes, Digest: {layer.digest}"
-            )
-            logger.info(f"Downloading {layer.mediaType} layer {layer.digest}")
-            file_layer, digest_layer = self._download_model_blob(
-                model_identifier=model_identifier,
-                named_digest=layer.digest,
-                model_source=ModelSource.HUGGINGFACE,
-            )
-            files_to_be_copied.append((file_layer, layer.digest, digest_layer))
+        # The layers could be null for cloud-hosted Ollama models but this is here only for consistency.
+        if manifest.layers:
+            for layer in manifest.layers:
+                logger.debug(
+                    f"Layer: {layer.mediaType}, Size: {layer.size} bytes, Digest: {layer.digest}"
+                )
+                logger.info(f"Downloading {layer.mediaType} layer {layer.digest}")
+                file_layer, digest_layer = self._download_model_blob(
+                    model_identifier=model_identifier,
+                    named_digest=layer.digest,
+                    model_source=ModelSource.HUGGINGFACE,
+                )
+                files_to_be_copied.append((file_layer, layer.digest, digest_layer))
         # All BLOBs have been downloaded, now copy them to their appropriate destinations.
         for source, named_digest, computed_digest in files_to_be_copied:
             copy_status, copy_destination = self._save_blob(
