@@ -61,9 +61,10 @@ class TestTyperCalls:
         """
         result = runner.invoke(app, ["list-tags", model_identifier := "gpt-oss"])
         assert result.exit_code == 0
-        # Expect at least two known tags to be listed for the gpt-oss model
+        # Expect at least two known tags and a cloud tag to be listed for the gpt-oss model
         assert f"{model_identifier}:latest" in result.output
         assert f"{model_identifier}:20b" in result.output
+        assert f"{model_identifier}:20b-cloud" in result.output
         result = runner.invoke(
             app=app,
             args=["list-tags", "made-up-model-that-should-not-exist"],
@@ -77,6 +78,12 @@ class TestTyperCalls:
         """
         # Let's try downloading the smallest possible model to stop the test from taking too long
         model_tag = "all-minilm:22m"
+        result = runner.invoke(app=app, args=["model-download", model_tag])
+        assert result.exit_code == 0
+        assert f"{model_tag} successfully downloaded and saved" in result.output
+
+        # Let's try downloading a cloud model
+        model_tag = "gpt-oss:20b-cloud"
         result = runner.invoke(app=app, args=["model-download", model_tag])
         assert result.exit_code == 0
         assert f"{model_tag} successfully downloaded and saved" in result.output

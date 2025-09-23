@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 from pydantic import AfterValidator, BaseModel, Field, HttpUrl
-from typing import Annotated, ClassVar, Optional, Tuple
+from typing import Annotated, ClassVar, List, Optional, Tuple
 
 from environs import env
 
@@ -203,7 +203,7 @@ class ImageManifest(BaseModel):
         ...,
         description="Configuration for the image manifest, including media type, size, and digest.",
     )
-    layers: list[ImageManifestLayerEntry] = Field(
-        ...,
+    layers: Optional[List[ImageManifestLayerEntry]] = Field(
+        None,
         description="List of layers in the image manifest, each with its media type, size, and digest.",
     )
