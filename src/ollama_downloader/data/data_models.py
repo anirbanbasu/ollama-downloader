@@ -11,8 +11,24 @@ from ollama_downloader.common import EnvVar
 logger = logging.getLogger(__name__)
 
 
+class CustomValidators:
+    @staticmethod
+    def validate_path_as_dir(path_str: str) -> str:
+        p = Path(os.path.expanduser(path_str))
+        if not p.exists():
+            raise ValueError(f"Path '{path_str}' does not exist.")
+        if not p.is_dir():
+            raise ValueError(f"Path '{path_str}' is not a valid directory.")
+        return path_str
+
+    @staticmethod
+    def validate_url(url_str: str) -> str:
+        parsed_url = HttpUrl(url_str)
+        return str(parsed_url)
+
+
 class OllamaServer(BaseModel):
-    url: Annotated[str, AfterValidator(HttpUrl), AfterValidator(str)] = Field(
+    url: Annotated[str, AfterValidator(CustomValidators.validate_url)] = Field(
         default="http://localhost:11434/",
         description="URL of the Ollama server.",
     )
@@ -27,26 +43,19 @@ class OllamaServer(BaseModel):
 
 
 class OllamaLibrary(BaseModel):
-    @staticmethod
-    def validate_path_as_dir(path_str: str) -> str:
-        p = Path(os.path.expanduser(path_str))
-        if not p.exists():
-            raise ValueError(f"Path '{path_str}' does not exist.")
-        if not p.is_dir():
-            raise ValueError(f"Path '{path_str}' is not a valid directory.")
-        return path_str
-
-    models_path: Annotated[str, AfterValidator(validate_path_as_dir)] = Field(
+    models_path: Annotated[
+        str, AfterValidator(CustomValidators.validate_path_as_dir)
+    ] = Field(
         default="~/.ollama/models",
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
     )
-    registry_base_url: Annotated[str, AfterValidator(HttpUrl), AfterValidator(str)] = (
+    registry_base_url: Annotated[str, AfterValidator(CustomValidators.validate_url)] = (
         Field(
             default="https://registry.ollama.ai/v2/library/",
             description="URL of the remote registry for Ollama models.",
         )
     )
-    library_base_url: Annotated[str, AfterValidator(HttpUrl), AfterValidator(str)] = (
+    library_base_url: Annotated[str, AfterValidator(CustomValidators.validate_url)] = (
         Field(
             default="https://ollama.com/library/",
             description="Base URL for the Ollama library. This is used to web scrape model metadata.",
