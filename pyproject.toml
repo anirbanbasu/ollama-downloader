@@ -1,16 +1,27 @@
 [project]
 name = "ollama-downloader"
-version = "0.1.1"
+version = "0.1.1.post1"
 description = "A library and Hugging Face model downloader for Ollama."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICEN[CS]E*"]
-keywords = ["downloader", "tool", "models", "web-scraper", "huggingface", "huggingface-models", "ollama", "ollama-downloader", "ollama-model", "ollama-library"]
+keywords = [
+    "downloader",
+    "tool",
+    "models",
+    "web-scraper",
+    "huggingface",
+    "huggingface-models",
+    "ollama",
+    "ollama-downloader",
+    "ollama-model",
+    "ollama-library"
+]
 authors = [
     { name = "Anirban Basu", email = "anirbanbasu@users.noreply.github.com" }
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
@@ -24,7 +35,7 @@ dependencies = [
     "environs>=14.3.0",
     "httpx[http2]>=0.28.1",
     "lxml>=6.0.0",
-    "ollama>=0.5.3",
+    "ollama>=0.6.0",
     "psutil>=7.0.0",
     "typer>=0.16.0",
 ]
