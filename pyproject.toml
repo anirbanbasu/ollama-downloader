@@ -61,6 +61,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "icecream>=2.1.7",
+    "nuitka>=2.7.16",
     "pre-commit>=4.3.0",
 ]
 test = [
