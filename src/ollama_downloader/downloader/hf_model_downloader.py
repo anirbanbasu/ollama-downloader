@@ -164,7 +164,8 @@ class HuggingFaceModelDownloader(ModelDownloader):
             model_identifiers = [
                 model["modelId"] for model in list(models_response.json())
             ]
-
+        logger.warning("HuggingFace models are sorted per page only.")
+        model_identifiers.sort()
         return model_identifiers
 
     def list_model_tags(self, model_identifier: str) -> List[str]:
@@ -189,4 +190,5 @@ class HuggingFaceModelDownloader(ModelDownloader):
             raise RuntimeError(
                 f"The model {model_identifier} has no support for Ollama."
             )
+        tags.sort()
         return tags

@@ -308,26 +308,11 @@ class OllamaDownloaderCLIApp:
     ):
         try:
             self._initialize()
-            result = await self._list_models()
-            result.sort()
-            filtered_result = result
-            if page_size and page:
-                # Adjust page number for 0-based index
-                start_index = (page - 1) * page_size
-                end_index = start_index + page_size
-                filtered_result = result[start_index:end_index]
-            if len(filtered_result) == 0:
-                logger.warning(
-                    f"No models found for the specified page {page} and page size {page_size}. Showing all models instead."
-                )
-                filtered_result = result
-                page = None
-            if page:
-                print(
-                    f"Model identifiers: ({len(filtered_result)}, page {page}): {filtered_result}"
-                )
+            result = await self._list_models(page=page, page_size=page_size)
+            if page and page_size and page_size >= len(result):
+                print(f"Model identifiers: ({len(result)}, page {page}): {result}")
             else:
-                print(f"Model identifiers: ({len(filtered_result)}): {filtered_result}")
+                print(f"Model identifiers: ({len(result)}): {result}")
         except Exception as e:
             logger.error(f"Error in listing models. {e}")
         finally:
