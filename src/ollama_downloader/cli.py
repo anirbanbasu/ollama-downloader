@@ -309,6 +309,7 @@ class OllamaDownloaderCLIApp:
         try:
             self._initialize()
             result = await self._list_models()
+            result.sort()
             filtered_result = result
             if page_size and page:
                 # Adjust page number for 0-based index
