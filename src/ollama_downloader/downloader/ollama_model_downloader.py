@@ -4,9 +4,7 @@ from typing import List, Set, Tuple
 
 from httpx import URL
 
-from environs import env
 
-from ollama_downloader.common import EnvVar
 from ollama_downloader.data.data_models import ImageManifest
 from ollama_downloader.downloader.model_downloader import ModelDownloader, ModelSource
 import lxml.html
@@ -17,7 +15,6 @@ from rich import print as print
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
-logger.setLevel(env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upper())
 
 
 class OllamaModelDownloader(ModelDownloader):
@@ -137,7 +134,7 @@ class OllamaModelDownloader(ModelDownloader):
                 if attribute == "href" and link.startswith(library_prefix):
                     available_models.append(link.replace(library_prefix, ""))
             logger.debug(f"Found {len(available_models)} models in the Ollama library.")
-            available_models.sort()
+            available_models.sort(key=lambda s: s.lower())
             paginated_result = available_models
             if page_size and page:
                 # Adjust page number for 0-based index
@@ -182,6 +179,6 @@ class OllamaModelDownloader(ModelDownloader):
                 ):
                     named_model_unique_tags.add(link.replace(library_prefix, ""))
             models_tags = list(named_model_unique_tags)
-            models_tags.sort()
+            models_tags.sort(key=lambda s: s.lower())
 
             return models_tags

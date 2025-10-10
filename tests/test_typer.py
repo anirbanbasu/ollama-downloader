@@ -3,7 +3,6 @@ from typer.testing import CliRunner
 import pytest
 
 from ollama_downloader.cli import app
-from ollama_downloader.common import EnvVar
 from ollama_downloader.data.data_models import AppSettings
 
 
@@ -17,7 +16,7 @@ class TestTyperCalls:
         """
         Fixture to provide a Typer CLI runner for testing.
         """
-        runner = CliRunner(env={EnvVar.LOG_LEVEL: EnvVar.DEFAULT__LOG_LEVEL})
+        runner = CliRunner()
         return runner
 
     def test_show_config(self, runner):

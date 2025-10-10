@@ -1,6 +1,6 @@
 import os
 import httpx
-from ollama_downloader.common import OllamaSystemInfo
+from ollama_downloader.sysinfo import OllamaSystemInfo
 
 
 class TestOllamaSystemInfo:

@@ -4,9 +4,8 @@ from pathlib import Path
 from pydantic import AfterValidator, BaseModel, Field, HttpUrl
 from typing import Annotated, ClassVar, List, Optional, Tuple
 
-from environs import env
 
-from ollama_downloader.common import EnvVar
+from ollama_downloader import EnvVar
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +95,7 @@ class AppSettings(BaseModel):
 
     @staticmethod
     def load_or_create_default(
-        settings_file: str = EnvVar.DEFAULT__OD_SETTINGS_FILE,
+        settings_file: str = EnvVar.OD_SETTINGS_FILE,
     ) -> "AppSettings | None":
         """
         Load settings from the configuration file, or create default settings if the file does not exist.
@@ -115,9 +114,7 @@ class AppSettings(BaseModel):
 
     @staticmethod
     def load_settings(
-        settings_file: str = env.str(
-            EnvVar.OD_SETTINGS_FILE, default=EnvVar.DEFAULT__OD_SETTINGS_FILE
-        ),
+        settings_file: str = EnvVar.OD_SETTINGS_FILE,
     ) -> "AppSettings | None":
         """
         Load settings from the configuration file.
@@ -140,9 +137,7 @@ class AppSettings(BaseModel):
     @staticmethod
     def save_settings(
         settings: "AppSettings",
-        settings_file: str = env.str(
-            EnvVar.OD_SETTINGS_FILE, default=EnvVar.DEFAULT__OD_SETTINGS_FILE
-        ),
+        settings_file: str = EnvVar.OD_SETTINGS_FILE,
     ) -> bool:
         """
         Save the application settings to the configuration file.

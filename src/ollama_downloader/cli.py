@@ -15,7 +15,7 @@ from rich import print as print
 from rich import print_json
 import psutil
 
-from ollama_downloader.common import OllamaSystemInfo
+from ollama_downloader.sysinfo import OllamaSystemInfo
 from ollama_downloader.data.data_models import AppSettings
 from ollama_downloader.downloader.ollama_model_downloader import OllamaModelDownloader
 from ollama_downloader.downloader.hf_model_downloader import HuggingFaceModelDownloader
