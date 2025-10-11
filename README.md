@@ -404,6 +404,12 @@ Once the native executable has been created, run it from the command line interf
 
 _Note that the natively compiled binary is unlikely to be significantly faster than the Python code that you can execute using `uv`_. After all, the bottleneck in most of the operations in Ollama downloader is more likely to be the network speed as opposed to code execution speed.
 
+## Installation on macOS and Linux using Homebrew
+
+Ollama downloader can be installed on macOS and Linux using Homebrew so that the installation of Python and the management of a virtual environment is all done by Homebrew leaving a single command `ollama-downloader` available on the command line interface.
+
+To do so, add the new tap by running: `brew tap anirbanbasu/tap`. Then, Ollama downloader can be installed using `brew install ollama-downloader`.
+
 ## Contributing
 
 Install [`pre-commit`](https://pre-commit.com/) for Git by using the `--all-groups` flag for `uv sync`.
