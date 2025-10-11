@@ -455,7 +455,7 @@ wheels = [
 
 [[package]]
 name = "ollama-downloader"
-version = "0.2.0"
+version = "0.2.0.post1"
 source = { editable = "." }
 dependencies = [
     { name = "environs" },

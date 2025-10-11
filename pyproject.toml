@@ -1,6 +1,6 @@
 [project]
 name = "ollama-downloader"
-version = "0.2.0"
+version = "0.2.0.post1"
 description = "A library and Hugging Face model downloader for Ollama."
 readme = "README.md"
 license = "MIT"

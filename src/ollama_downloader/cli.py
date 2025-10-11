@@ -71,7 +71,7 @@ class OllamaDownloaderCLIApp:
         if len(name_splits) != 2:
             abbreviation = package_name
         else:
-            abbreviation = f"{name_splits[0]}{name_splits[1][0]}"
+            abbreviation = f"{name_splits[0][0]}{name_splits[1][0]}"
         return (
             f"{package_name} ({abbreviation}) version {metadata_version(package_name)}"
         )
