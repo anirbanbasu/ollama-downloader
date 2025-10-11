@@ -4,10 +4,8 @@ from typing import Annotated, List, Optional, Tuple
 from urllib.parse import urlparse
 
 
-from environs import env
 from pydantic import Field
 
-from ollama_downloader.common import EnvVar
 from ollama_downloader.data.data_models import ImageManifest
 from ollama_downloader.downloader.model_downloader import ModelDownloader, ModelSource
 
@@ -18,7 +16,6 @@ from ollama import Client as OllamaClient
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
-logger.setLevel(env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upper())
 
 
 class HuggingFaceModelDownloader(ModelDownloader):
@@ -164,7 +161,10 @@ class HuggingFaceModelDownloader(ModelDownloader):
             model_identifiers = [
                 model["modelId"] for model in list(models_response.json())
             ]
-
+        logger.warning(
+            "HuggingFace models are sorted in the context of the selected page only."
+        )
+        model_identifiers.sort(key=lambda s: s.lower())
         return model_identifiers
 
     def list_model_tags(self, model_identifier: str) -> List[str]:
@@ -189,4 +189,5 @@ class HuggingFaceModelDownloader(ModelDownloader):
             raise RuntimeError(
                 f"The model {model_identifier} has no support for Ollama."
             )
+        tags.sort(key=lambda s: s.lower())
         return tags

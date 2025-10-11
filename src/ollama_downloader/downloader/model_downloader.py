@@ -17,7 +17,7 @@ import httpx
 
 from environs import env
 
-from ollama_downloader.common import EnvVar
+from ollama_downloader import EnvVar
 
 from rich.progress import (
     Progress,
@@ -44,7 +44,7 @@ class ModelDownloader(ABC):
         self.settings: AppSettings = AppSettings.load_or_create_default()
         if not self.settings:
             raise RuntimeError("Failed to load or create and save default settings.")
-        self._user_agent: str = f"{env.str(EnvVar.OD_UA_NAME_VER, default=EnvVar.DEFAULT__OD_UA_NAME_VER)} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
+        self._user_agent: str = f"{EnvVar.OD_UA_NAME_VER} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
         self._unnecessary_files: Set[str] = set()
         self._cleanup_running: bool = False
 

@@ -14,8 +14,9 @@ import typer
 from rich import print as print
 from rich import print_json
 import psutil
+from importlib.metadata import version as metadata_version
 
-from ollama_downloader.common import OllamaSystemInfo
+from ollama_downloader.sysinfo import OllamaSystemInfo
 from ollama_downloader.data.data_models import AppSettings
 from ollama_downloader.downloader.ollama_model_downloader import OllamaModelDownloader
 from ollama_downloader.downloader.hf_model_downloader import HuggingFaceModelDownloader
@@ -63,6 +64,24 @@ class OllamaDownloaderCLIApp:
             self._hf_model_downloader.cleanup_unnecessary_files()
 
         logger.debug("Cleanup completed.")
+
+    async def _version(self):
+        package_name = "ollama-downloader"
+        name_splits = package_name.split("-")
+        if len(name_splits) != 2:
+            abbreviation = package_name
+        else:
+            abbreviation = f"{name_splits[0]}{name_splits[1][0]}"
+        return (
+            f"{package_name} ({abbreviation}) version {metadata_version(package_name)}"
+        )
+
+    async def run_version(self):
+        try:
+            result = await self._version()
+            print(result)
+        except Exception as e:
+            logger.error(f"Error in getting version. {e}")
 
     async def _show_config(self):
         return self._model_downloader.settings.model_dump_json()
@@ -308,25 +327,11 @@ class OllamaDownloaderCLIApp:
     ):
         try:
             self._initialize()
-            result = await self._list_models()
-            filtered_result = result
-            if page_size and page:
-                # Adjust page number for 0-based index
-                start_index = (page - 1) * page_size
-                end_index = start_index + page_size
-                filtered_result = result[start_index:end_index]
-            if len(filtered_result) == 0:
-                logger.warning(
-                    f"No models found for the specified page {page} and page size {page_size}. Showing all models instead."
-                )
-                filtered_result = result
-                page = None
-            if page:
-                print(
-                    f"Model identifiers: ({len(filtered_result)}, page {page}): {filtered_result}"
-                )
+            result = await self._list_models(page=page, page_size=page_size)
+            if page and page_size and page_size >= len(result):
+                print(f"Model identifiers: ({len(result)}, page {page}): {result}")
             else:
-                print(f"Model identifiers: ({len(filtered_result)}): {filtered_result}")
+                print(f"Model identifiers: ({len(result)}): {result}")
         except Exception as e:
             logger.error(f"Error in listing models. {e}")
         finally:
@@ -405,6 +410,13 @@ class OllamaDownloaderCLIApp:
             logger.error(f"Error in downloading Hugging Face model. {e}")
         finally:
             self._cleanup()
+
+
+@app.command()
+def version():
+    """Shows the app version of Ollama downloader."""
+    app_handler = OllamaDownloaderCLIApp()
+    asyncio.run(app_handler.run_version())
 
 
 @app.command()

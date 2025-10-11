@@ -4,9 +4,7 @@ from typing import List, Set, Tuple
 
 from httpx import URL
 
-from environs import env
 
-from ollama_downloader.common import EnvVar
 from ollama_downloader.data.data_models import ImageManifest
 from ollama_downloader.downloader.model_downloader import ModelDownloader, ModelSource
 import lxml.html
@@ -17,7 +15,6 @@ from rich import print as print
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
-logger.setLevel(env.str(EnvVar.LOG_LEVEL, default=EnvVar.DEFAULT__LOG_LEVEL).upper())
 
 
 class OllamaModelDownloader(ModelDownloader):
@@ -121,14 +118,6 @@ class OllamaModelDownloader(ModelDownloader):
     def list_available_models(
         self, page: int | None = None, page_size: int | None = None
     ) -> List[str]:
-        if page is not None:
-            logger.warning(
-                "Pagination is not supported for Ollama library. Ignoring page parameter."
-            )
-        if page_size is not None:
-            logger.warning(
-                "Pagination is not supported for Ollama library. Ignoring page_size parameter."
-            )
         with self.get_httpx_client(
             verify=self.settings.ollama_library.verify_ssl,
             timeout=self.settings.ollama_library.timeout,
@@ -145,7 +134,20 @@ class OllamaModelDownloader(ModelDownloader):
                 if attribute == "href" and link.startswith(library_prefix):
                     available_models.append(link.replace(library_prefix, ""))
             logger.debug(f"Found {len(available_models)} models in the Ollama library.")
-            return available_models
+            available_models.sort(key=lambda s: s.lower())
+            paginated_result = available_models
+            if page_size and page:
+                # Adjust page number for 0-based index
+                start_index = (page - 1) * page_size
+                end_index = start_index + page_size
+                paginated_result = available_models[start_index:end_index]
+            if len(paginated_result) == 0:
+                logger.warning(
+                    f"No models found for the specified page {page} and page size {page_size}. Returning all models instead."
+                )
+                paginated_result = available_models
+                page = None
+            return paginated_result
 
     def list_model_tags(self, model_identifier: str) -> List[str]:
         available_models = self.list_available_models()
@@ -177,5 +179,6 @@ class OllamaModelDownloader(ModelDownloader):
                 ):
                     named_model_unique_tags.add(link.replace(library_prefix, ""))
             models_tags = list(named_model_unique_tags)
+            models_tags.sort(key=lambda s: s.lower())
 
             return models_tags

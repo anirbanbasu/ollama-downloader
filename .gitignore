@@ -210,3 +210,6 @@ __marimo__/
 conf/
 # Pytest profiling
 prof/
+
+# Native binaries created by Nuitka
+od-native*
