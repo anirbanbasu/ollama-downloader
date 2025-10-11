@@ -14,6 +14,7 @@ import typer
 from rich import print as print
 from rich import print_json
 import psutil
+from importlib.metadata import version as metadata_version
 
 from ollama_downloader.sysinfo import OllamaSystemInfo
 from ollama_downloader.data.data_models import AppSettings
@@ -63,6 +64,24 @@ class OllamaDownloaderCLIApp:
             self._hf_model_downloader.cleanup_unnecessary_files()
 
         logger.debug("Cleanup completed.")
+
+    async def _version(self):
+        package_name = "ollama-downloader"
+        name_splits = package_name.split("-")
+        if len(name_splits) != 2:
+            abbreviation = package_name
+        else:
+            abbreviation = f"{name_splits[0]}{name_splits[1][0]}"
+        return (
+            f"{package_name} ({abbreviation}) version {metadata_version(package_name)}"
+        )
+
+    async def run_version(self):
+        try:
+            result = await self._version()
+            print(result)
+        except Exception as e:
+            logger.error(f"Error in getting version. {e}")
 
     async def _show_config(self):
         return self._model_downloader.settings.model_dump_json()
@@ -391,6 +410,13 @@ class OllamaDownloaderCLIApp:
             logger.error(f"Error in downloading Hugging Face model. {e}")
         finally:
             self._cleanup()
+
+
+@app.command()
+def version():
+    """Shows the app version of Ollama downloader."""
+    app_handler = OllamaDownloaderCLIApp()
+    asyncio.run(app_handler.run_version())
 
 
 @app.command()
