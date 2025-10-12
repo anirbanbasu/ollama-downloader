@@ -1,14 +1,9 @@
 import asyncio
-import grp
 import logging
-import os
-import platform
-import pwd
-import re
 import signal
 import sys
 from types import FrameType
-from typing import Any, Dict, Optional
+from typing import Optional
 from typing_extensions import Annotated
 import typer
 from rich import print as print
@@ -21,7 +16,6 @@ from ollama_downloader.data.data_models import AppSettings
 from ollama_downloader.downloader.ollama_model_downloader import OllamaModelDownloader
 from ollama_downloader.downloader.hf_model_downloader import HuggingFaceModelDownloader
 
-from ollama import Client as OllamaClient
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
@@ -42,7 +36,9 @@ class OllamaDownloaderCLIApp:
         self._model_downloader: OllamaModelDownloader = None
         self._hf_model_downloader: HuggingFaceModelDownloader = None
 
-    def _interrupt_handler(self, signum: int, frame: FrameType | None):
+    def _interrupt_handler(
+        self, signum: int, frame: FrameType | None
+    ):  # pragma: no cover
         logger.warning("Interrupt signal received, performing clean shutdown")
         logger.debug(f"Interrupt signal number: {signum}. Frame: {frame}")
         # Cleanup will be performed due to the finally block in each command
@@ -129,178 +125,178 @@ class OllamaDownloaderCLIApp:
             )
         return inferred_settings.model_dump_json()
 
-    async def old_auto_config(self):
-        logger.warning(
-            "Automatic configuration is a future experimental idea, which has not been implemented yet. Stay tuned!"
-        )
-        logger.warning(
-            "Some relevant information about Ollama will be displayed but these are based on assumptions that may not always be true."
-        )
-        # TODO: The following stuff must go in its own module/class with its own tests. This is just a placeholder.
-        # The idea is to gather relevant information about the Ollama installation and use it to infer a configuration.
-        # 1. Check if Ollama is installed and running.
-        # 2. Output the IP/interface and port the Ollama server is listening on.
-        # 3. Output the Ollama executable path.
-        # 4. Output user/group Ollama is running as.
-        # 5. Attempt to connect to the running Ollama server and try to infer the model storage path from the first modelfile.
+    # async def old_auto_config(self):
+    #     logger.warning(
+    #         "Automatic configuration is a future experimental idea, which has not been implemented yet. Stay tuned!"
+    #     )
+    #     logger.warning(
+    #         "Some relevant information about Ollama will be displayed but these are based on assumptions that may not always be true."
+    #     )
+    #     # TODO: The following stuff must go in its own module/class with its own tests. This is just a placeholder.
+    #     # The idea is to gather relevant information about the Ollama installation and use it to infer a configuration.
+    #     # 1. Check if Ollama is installed and running.
+    #     # 2. Output the IP/interface and port the Ollama server is listening on.
+    #     # 3. Output the Ollama executable path.
+    #     # 4. Output user/group Ollama is running as.
+    #     # 5. Attempt to connect to the running Ollama server and try to infer the model storage path from the first modelfile.
 
-        if platform.system() == "Windows":
-            # Don't bother going there until we have a real Windows machine to test on.
-            raise NotImplementedError(
-                "Automatic configuration is not supported on Windows yet. Probably never will be!"
-            )
-        relevant_info: Dict[str, Any] = {}
+    #     if platform.system() == "Windows":
+    #         # Don't bother going there until we have a real Windows machine to test on.
+    #         raise NotImplementedError(
+    #             "Automatic configuration is not supported on Windows yet. Probably never will be!"
+    #         )
+    #     relevant_info: Dict[str, Any] = {}
 
-        pid: int = -1
-        for proc in psutil.process_iter(["pid", "name"]):
-            if proc.info["name"] == "ollama":
-                pid = proc.info["pid"]
-        if pid < 0:
-            raise RuntimeError(
-                "Ollama process not found. Is Ollama installed and running?"
-            )
-        process = psutil.Process(pid)
-        relevant_info["process"] = {"name": process.name(), "pid": pid}
-        parent_id = process.ppid()
-        relevant_info["parent"] = {
-            "name": psutil.Process(parent_id).name(),
-            "pid": parent_id,
-        }
-        # User and Group Information
-        username = process.username()
+    #     pid: int = -1
+    #     for proc in psutil.process_iter(["pid", "name"]):
+    #         if proc.info["name"] == "ollama":
+    #             pid = proc.info["pid"]
+    #     if pid < 0:
+    #         raise RuntimeError(
+    #             "Ollama process not found. Is Ollama installed and running?"
+    #         )
+    #     process = psutil.Process(pid)
+    #     relevant_info["process"] = {"name": process.name(), "pid": pid}
+    #     parent_id = process.ppid()
+    #     relevant_info["parent"] = {
+    #         "name": psutil.Process(parent_id).name(),
+    #         "pid": parent_id,
+    #     }
+    #     # User and Group Information
+    #     username = process.username()
 
-        owner = {}
-        effective_uid = process.uids().effective
-        effective_gid = process.gids().effective
-        owner["user"] = {"name": username, "uid": effective_uid}
-        owner["group"] = {
-            "name": grp.getgrgid(effective_gid).gr_name,
-            "gid": effective_gid,
-        }
-        relevant_info["owner"] = owner
+    #     owner = {}
+    #     effective_uid = process.uids().effective
+    #     effective_gid = process.gids().effective
+    #     owner["user"] = {"name": username, "uid": effective_uid}
+    #     owner["group"] = {
+    #         "name": grp.getgrgid(effective_gid).gr_name,
+    #         "gid": effective_gid,
+    #     }
+    #     relevant_info["owner"] = owner
 
-        relevant_info["sudo_needed_to_download_models"] = os.getuid() != effective_uid
+    #     relevant_info["sudo_needed_to_download_models"] = os.getuid() != effective_uid
 
-        relevant_info["executable"] = process.exe()
-        relevant_info["cmdline"] = process.cmdline()
+    #     relevant_info["executable"] = process.exe()
+    #     relevant_info["cmdline"] = process.cmdline()
 
-        explicit_models_dir = process.environ().get("OLLAMA_MODELS", None)
-        relevant_info["model_dir_explicitly_specified"] = (
-            explicit_models_dir is not None
-        )
+    #     explicit_models_dir = process.environ().get("OLLAMA_MODELS", None)
+    #     relevant_info["model_dir_explicitly_specified"] = (
+    #         explicit_models_dir is not None
+    #     )
 
-        relevant_info["http_proxy_specified"] = (
-            process.environ().get("HTTP_PROXY", None) is not None
-            or process.environ().get("http_proxy", None) is not None
-            or process.environ().get("HTTPS_PROXY", None) is not None
-            or process.environ().get("https_proxy", None) is not None
-        )
+    #     relevant_info["http_proxy_specified"] = (
+    #         process.environ().get("HTTP_PROXY", None) is not None
+    #         or process.environ().get("http_proxy", None) is not None
+    #         or process.environ().get("HTTPS_PROXY", None) is not None
+    #         or process.environ().get("https_proxy", None) is not None
+    #     )
 
-        listening_on = []
-        ollama_url = ""
-        for conn in process.net_connections(kind="inet"):
-            if conn.status == psutil.CONN_LISTEN:
-                laddr = (
-                    f"{conn.laddr.ip}:{conn.laddr.port}"
-                    if conn.laddr.ip != "::"
-                    else f"127.0.0.1:{conn.laddr.port}"
-                )
-                listening_on.append(laddr)
-                ollama_url = f"http://{laddr}"
-                # Just take the first listening address
-                break
-        relevant_info["listening_on"] = listening_on
+    #     listening_on = []
+    #     ollama_url = ""
+    #     for conn in process.net_connections(kind="inet"):
+    #         if conn.status == psutil.CONN_LISTEN:
+    #             laddr = (
+    #                 f"{conn.laddr.ip}:{conn.laddr.port}"
+    #                 if conn.laddr.ip != "::"
+    #                 else f"127.0.0.1:{conn.laddr.port}"
+    #             )
+    #             listening_on.append(laddr)
+    #             ollama_url = f"http://{laddr}"
+    #             # Just take the first listening address
+    #             break
+    #     relevant_info["listening_on"] = listening_on
 
-        # FIXME: This is not a good idea, since we are including a specific check
-        # but most systems use this init system so it maybe fine.
-        systemd_service = "/etc/systemd/system/ollama.service"
-        systemd_daemon = os.path.exists(systemd_service)
+    #     # FIXME: This is not a good idea, since we are including a specific check
+    #     # but most systems use this init system so it maybe fine.
+    #     systemd_service = "/etc/systemd/system/ollama.service"
+    #     systemd_daemon = os.path.exists(systemd_service)
 
-        ollama_client = OllamaClient(host=ollama_url)
-        models_list = ollama_client.list().models
-        if explicit_models_dir is not None:
-            relevant_info["likely_models_path"] = explicit_models_dir
-        elif systemd_daemon:
-            # https://ollama.com/install.sh :: function configure_systemd()
-            # if systemd is the init system we use the /usr/share/ollama directory for all installs
-            relevant_info["likely_models_path"] = "/usr/share/ollama/.ollama/models"
-        elif len(models_list) > 0:
-            modelfile_text = ollama_client.show(models_list[0].model).modelfile
-            pattern = re.compile(
-                r"^\s*FROM\s+(.+?)(?:\s*#.*)?$", re.IGNORECASE | re.MULTILINE
-            )
-            match = pattern.search(modelfile_text)
-            if match:
-                model_blob_path = match.group(1).strip()
-                likely_models_dir = str(
-                    os.path.dirname(os.path.dirname(model_blob_path))
-                )
-                relevant_info["likely_models_path"] = likely_models_dir.replace(
-                    os.path.expanduser("~"), "~"
-                )
-                real_models_path = os.path.realpath(likely_models_dir)
-                is_symlink_in_path = real_models_path != likely_models_dir
-                if is_symlink_in_path:
-                    relevant_info["symlink_in_models_path"] = is_symlink_in_path
-                    relevant_info["likely_real_models_path"] = real_models_path
-                    stat_info = os.stat(real_models_path)
-                    relevant_info["likely_real_models_path_owner"] = {
-                        "user": {
-                            "name": pwd.getpwuid(stat_info.st_uid).pw_name,
-                            "uid": stat_info.st_uid,
-                        },
-                        "group": {
-                            "name": grp.getgrgid(stat_info.st_gid).gr_name,
-                            "gid": stat_info.st_gid,
-                        },
-                    }
-        else:
-            # We could select ~/.ollama/models as a default directory
-            relevant_info["likely_models_path"] = "~/.ollama/models"
-            logger.warning(
-                "No models found in the running Ollama instance. Models path cannot be computed. Using defaults."
-            )
+    #     ollama_client = OllamaClient(host=ollama_url)
+    #     models_list = ollama_client.list().models
+    #     if explicit_models_dir is not None:
+    #         relevant_info["likely_models_path"] = explicit_models_dir
+    #     elif systemd_daemon:
+    #         # https://ollama.com/install.sh :: function configure_systemd()
+    #         # if systemd is the init system we use the /usr/share/ollama directory for all installs
+    #         relevant_info["likely_models_path"] = "/usr/share/ollama/.ollama/models"
+    #     elif len(models_list) > 0:
+    #         modelfile_text = ollama_client.show(models_list[0].model).modelfile
+    #         pattern = re.compile(
+    #             r"^\s*FROM\s+(.+?)(?:\s*#.*)?$", re.IGNORECASE | re.MULTILINE
+    #         )
+    #         match = pattern.search(modelfile_text)
+    #         if match:
+    #             model_blob_path = match.group(1).strip()
+    #             likely_models_dir = str(
+    #                 os.path.dirname(os.path.dirname(model_blob_path))
+    #             )
+    #             relevant_info["likely_models_path"] = likely_models_dir.replace(
+    #                 os.path.expanduser("~"), "~"
+    #             )
+    #             real_models_path = os.path.realpath(likely_models_dir)
+    #             is_symlink_in_path = real_models_path != likely_models_dir
+    #             if is_symlink_in_path:
+    #                 relevant_info["symlink_in_models_path"] = is_symlink_in_path
+    #                 relevant_info["likely_real_models_path"] = real_models_path
+    #                 stat_info = os.stat(real_models_path)
+    #                 relevant_info["likely_real_models_path_owner"] = {
+    #                     "user": {
+    #                         "name": pwd.getpwuid(stat_info.st_uid).pw_name,
+    #                         "uid": stat_info.st_uid,
+    #                     },
+    #                     "group": {
+    #                         "name": grp.getgrgid(stat_info.st_gid).gr_name,
+    #                         "gid": stat_info.st_gid,
+    #                     },
+    #                 }
+    #     else:
+    #         # We could select ~/.ollama/models as a default directory
+    #         relevant_info["likely_models_path"] = "~/.ollama/models"
+    #         logger.warning(
+    #             "No models found in the running Ollama instance. Models path cannot be computed. Using defaults."
+    #         )
 
-        open_files = []
-        for file in process.open_files():
-            open_files.append(file.path)
-        relevant_info["ollama_open_files"] = open_files
+    #     open_files = []
+    #     for file in process.open_files():
+    #         open_files.append(file.path)
+    #     relevant_info["ollama_open_files"] = open_files
 
-        # auto-config does not need to fail if we can't detect if ollama is a daemon or not
-        try:
-            relevant_info["ollama_is_likely_daemon"] = systemd_daemon or (
-                process.terminal() is None
-                and process.status()
-                not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
-                and process.ppid() != 1
-            )
-        except Exception as e:
-            if isinstance(e, psutil.AccessDenied):
-                logger.info(
-                    "Seems like you need to run this command with super-user permissions. Try `sudo`!"
-                )
+    #     # auto-config does not need to fail if we can't detect if ollama is a daemon or not
+    #     try:
+    #         relevant_info["ollama_is_likely_daemon"] = systemd_daemon or (
+    #             process.terminal() is None
+    #             and process.status()
+    #             not in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]
+    #             and process.ppid() != 1
+    #         )
+    #     except Exception as e:
+    #         if isinstance(e, psutil.AccessDenied):
+    #             logger.info(
+    #                 "Seems like you need to run this command with super-user permissions. Try `sudo`!"
+    #             )
 
-        current_settings = self._model_downloader.settings
+    #     current_settings = self._model_downloader.settings
 
-        new_settings = current_settings.model_dump()
-        new_settings["ollama_library"]["user_group"] = (
-            owner["user"]["name"],
-            owner["group"]["name"],
-        )
-        new_settings["ollama_library"]["models_path"] = relevant_info[
-            "likely_models_path"
-        ]
+    #     new_settings = current_settings.model_dump()
+    #     new_settings["ollama_library"]["user_group"] = (
+    #         owner["user"]["name"],
+    #         owner["group"]["name"],
+    #     )
+    #     new_settings["ollama_library"]["models_path"] = relevant_info[
+    #         "likely_models_path"
+    #     ]
 
-        for entry in new_settings["ollama_library"]:
-            value = new_settings["ollama_library"][entry]
-            current_value = current_settings.ollama_library.__dict__[entry]
-            if current_value != value:
-                logger.info(
-                    f"Change value of {entry} from {current_value} to {value}. Updating the `conf/settings.json` may be nessesary."
-                )
+    #     for entry in new_settings["ollama_library"]:
+    #         value = new_settings["ollama_library"][entry]
+    #         current_value = current_settings.ollama_library.__dict__[entry]
+    #         if current_value != value:
+    #             logger.info(
+    #                 f"Change value of {entry} from {current_value} to {value}. Updating the `conf/settings.json` may be nessesary."
+    #             )
 
-        # we do not update anything without the user consent
-        return current_settings.model_dump_json()
+    #     # we do not update anything without the user consent
+    #     return current_settings.model_dump_json()
 
     async def run_auto_config(self):
         try:
@@ -542,5 +538,5 @@ def main():
     app()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

@@ -5,11 +5,15 @@ import pytest
 from ollama_downloader.cli import app
 from ollama_downloader.data.data_models import AppSettings
 
+from importlib.metadata import version
+
 
 class TestTyperCalls:
     """
     Class to group tests related to Typer CLI commands.
     """
+
+    PACKAGE_NAME = "ollama-downloader"
 
     @pytest.fixture(autouse=True)
     def runner(self):
@@ -18,6 +22,15 @@ class TestTyperCalls:
         """
         runner = CliRunner()
         return runner
+
+    def test_version(self, runner):
+        """
+        Test the 'version' command of the CLI.
+        """
+        result = runner.invoke(app=app, args=["version"])
+        expected_version = version(self.PACKAGE_NAME)
+        assert expected_version in result.output
+        assert result.exit_code == 0
 
     def test_show_config(self, runner):
         """

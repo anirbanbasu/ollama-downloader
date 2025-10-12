@@ -422,7 +422,7 @@ class ModelDownloader(ABC):
                     )
             self._cleanup_running = False
 
-    def remove_model(self, model_identifier: str) -> bool:
+    def remove_model(self, model_identifier: str) -> bool:  # pragma: no cover
         """
         Removes a model from the Ollama server.
         """
