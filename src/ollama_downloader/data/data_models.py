@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+import platform
 from pydantic import AfterValidator, BaseModel, Field, HttpUrl
 from typing import Annotated, ClassVar, List, Optional, Tuple
 
@@ -45,7 +46,14 @@ class OllamaLibrary(BaseModel):
     models_path: Annotated[
         str, AfterValidator(CustomValidators.validate_path_as_dir)
     ] = Field(
-        default="~/.ollama/models",
+        # Windows environment variables: https://learn.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables
+        default=os.path.join(
+            "~"
+            if platform.system().lower() != "windows"
+            else os.getenv("CSIDL_PROFILE", ""),
+            ".ollama",
+            "models",
+        ),
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
     )
     registry_base_url: Annotated[str, AfterValidator(CustomValidators.validate_url)] = (

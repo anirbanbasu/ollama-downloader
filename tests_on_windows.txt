@@ -1,0 +1,9 @@
+tests/test_data_models.py
+tests/test_typer.py::TestTyperCalls::test_version
+tests/test_typer.py::TestTyperCalls::test_show_config
+tests/test_typer.py::TestTyperCalls::test_list_models
+tests/test_typer.py::TestTyperCalls::test_list_tags
+tests/test_typer.py::TestTyperCalls::test_model_download
+tests/test_typer.py::TestTyperCalls::test_hf_list_models
+tests/test_typer.py::TestTyperCalls::test_hf_list_tags
+tests/test_typer.py::TestTyperCalls::test_hf_model_download

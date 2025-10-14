@@ -25,7 +25,9 @@ class EnvVar:
 
     OD_UA_NAME_VER = env.str("OD_UA_NAME_VER", default="ollama-downloader/0.1.1")
 
-    OD_SETTINGS_FILE = env.str("OD_SETTINGS_FILE", default="conf/settings.json")
+    OD_SETTINGS_FILE = env.str(
+        "OD_SETTINGS_FILE", default=os.path.join("conf", "settings.json")
+    )
 
 
 logging.basicConfig(
