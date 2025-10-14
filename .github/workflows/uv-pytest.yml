@@ -51,7 +51,7 @@ jobs:
         run: uv sync --all-groups
 
       - name: Run tests using pytest
-        run: uv run --group test pytest -v tests/test_data_models.py \
+        run: uv run --group test pytest -v tests\test_data_models.py \
           tests\test_typer.py::TestTyperCalls::test_version \
           tests\test_typer.py::TestTyperCalls::test_show_config \
           tests\test_typer.py::TestTyperCalls::test_list_models \
