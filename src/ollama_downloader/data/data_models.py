@@ -1,7 +1,6 @@
 import logging
 import os
 from pathlib import Path
-import platform
 from pydantic import AfterValidator, BaseModel, Field, HttpUrl
 from typing import Annotated, ClassVar, List, Optional, Tuple
 
@@ -48,9 +47,9 @@ class OllamaLibrary(BaseModel):
     ] = Field(
         # Windows environment variables: https://learn.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables
         default=os.path.join(
-            "~"
-            if platform.system().lower() != "windows"
-            else os.getenv("CSIDL_PROFILE", ""),
+            "~",
+            # if platform.system().lower() != "windows"
+            # else os.path.expanduser("~"),
             ".ollama",
             "models",
         ),
