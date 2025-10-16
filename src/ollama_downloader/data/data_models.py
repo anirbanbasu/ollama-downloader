@@ -49,7 +49,6 @@ class OllamaLibrary(BaseModel):
         default=os.path.join(
             "~",
             # if platform.system().lower() != "windows"
-            # else os.path.expanduser("~"),
             ".ollama",
             "models",
         ),
