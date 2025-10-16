@@ -38,7 +38,7 @@ dependencies = [
     "ollama>=0.6.0",
     "psutil>=7.0.0",
     "typer>=0.16.0",
-    "pywin32>=311 ; sys_platform == 'win32' or sys_platform == 'win_amd64' or sys_platform == 'win_arm64'",
+    "pywin32>=311 ; sys_platform == 'win32'",
 ]
 
 [tool.coverage.run]
