@@ -403,7 +403,7 @@ class OllamaDownloaderCLIApp:
             self._initialize()
             await self._hf_model_download(user_repo_quant=user_repo_quant)
         except Exception as e:
-            logger.error(f"Error in downloading Hugging Face model. {e}")
+            logger.exception(f"Error in downloading Hugging Face model. {e}")
         finally:
             self._cleanup()
 

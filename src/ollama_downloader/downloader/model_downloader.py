@@ -139,22 +139,25 @@ class ModelDownloader(ABC):
         Returns:
             httpx.URL: The constructed manifest URL.
         """
+        model, tag = (
+            model_identifier.split(":")
+            if ":" in model_identifier
+            else (model_identifier, "latest")
+        )
         match model_source:
             case ModelSource.OLLAMA:
-                model, tag = (
-                    model_identifier.split(":")
-                    if ":" in model_identifier
-                    else (model_identifier, "latest")
-                )
                 logger.debug(f"Constructing manifest URL for {model}:{tag}")
                 return httpx.URL(self.settings.ollama_library.registry_base_url).join(
                     f"{model}/manifests/{tag}"
                 )
             case ModelSource.HUGGINGFACE:
                 logger.debug(f"Constructing manifest URL for {model_identifier}")
-                return httpx.URL(
-                    f"{ModelDownloader.HF_BASE_URL}{model_identifier.replace(':', '/manifests/')}"
+                hf_model_identifier = (
+                    model_identifier.replace(":", "/manifests/")
+                    if ":" in model_identifier
+                    else f"{model_identifier}/manifests/{tag}"
                 )
+                return httpx.URL(f"{ModelDownloader.HF_BASE_URL}{hf_model_identifier}")
             case _:
                 raise ValueError(f"Unsupported model source: {model_source}")
 

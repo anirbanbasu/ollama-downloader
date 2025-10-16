@@ -21,19 +21,12 @@ logger = logging.getLogger(__name__)
 class HuggingFaceModelDownloader(ModelDownloader):
     def __init__(self):
         super().__init__()
-        # if not self.settings.ollama_library.verify_ssl:
-        #     logger.warning(
-        #         "Disabling SSL verification for HTTP requests. This is not recommended for production use."
-        #     )
-        #     session = requests.Session()
-        #     session.verify = False
-        #     configure_http_backend(backend_factory=lambda: session)
 
     def download_model(self, model_identifier: str) -> bool:
         # Validate the response as an ImageManifest but don't enforce strict validation
         (user, model_repo), quant = (
             model_identifier.split(":")[0].split("/"),
-            model_identifier.split(":")[1],
+            model_identifier.split(":")[1] if ":" in model_identifier else "latest",
         )
         print(
             f"Downloading Hugging Face model {model_repo} from {user} with {quant} quantisation"
