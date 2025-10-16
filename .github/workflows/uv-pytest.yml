@@ -15,9 +15,8 @@ name: pytest
 
 jobs:
   uv-pytest:
-    name: python
+    name: python-on-nix
     runs-on: ubuntu-latest
-    # runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v4
@@ -32,5 +31,4 @@ jobs:
         run: uv sync --all-groups
 
       - name: Run tests using pytest
-      # Disable model_download tests on non self-hosted runners for now.
         run: uv run --group test pytest -v tests/

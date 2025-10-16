@@ -1,10 +1,15 @@
-import grp
 import logging
 import os
 import re
 from typing import ClassVar
 import platform
 import psutil
+
+try:
+    import grp  # Unix, macOS and Linux only
+except ImportError:
+    # Windows does not have the grp module
+    grp = None  # type: ignore[assignment]
 
 from ollama import Client as OllamaClient
 
@@ -118,7 +123,9 @@ class OllamaSystemInfo:
                 username = proc.username()
                 uid = proc.uids().real if hasattr(proc, "uids") else -1
                 gid = proc.gids().real if hasattr(proc, "gids") else -1
-                groupname = grp.getgrgid(gid).gr_name if gid != -1 else ""
+                groupname = (
+                    grp.getgrgid(gid).gr_name if grp is not None and gid != -1 else ""
+                )
                 self.process_owner = (username, uid, groupname, gid)
                 logger.debug(
                     f"Owner of process {proc.name()} ({self.process_id}, {proc.status()}): {self.process_owner}"

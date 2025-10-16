@@ -45,7 +45,12 @@ class OllamaLibrary(BaseModel):
     models_path: Annotated[
         str, AfterValidator(CustomValidators.validate_path_as_dir)
     ] = Field(
-        default="~/.ollama/models",
+        # Windows environment variables: https://learn.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables
+        default=os.path.join(
+            "~",
+            ".ollama",
+            "models",
+        ),
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
     )
     registry_base_url: Annotated[str, AfterValidator(CustomValidators.validate_url)] = (

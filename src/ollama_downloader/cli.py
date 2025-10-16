@@ -4,6 +4,7 @@ import signal
 import sys
 from types import FrameType
 from typing import Optional
+from httpx import HTTPStatusError
 from typing_extensions import Annotated
 import typer
 from rich import print as print
@@ -329,7 +330,9 @@ class OllamaDownloaderCLIApp:
             else:
                 print(f"Model identifiers: ({len(result)}): {result}")
         except Exception as e:
-            logger.error(f"Error in listing models. {e}")
+            logger.error(
+                f"Error in listing models. {e}{'\n' + e.response.text if isinstance(e, HTTPStatusError) else ''}"
+            )
         finally:
             self._cleanup()
 
@@ -342,7 +345,9 @@ class OllamaDownloaderCLIApp:
             result = await self._list_tags(model_identifier=model_identifier)
             print(f"Model tags: ({len(result)}): {result}")
         except Exception as e:
-            logger.error(f"Error in listing model tags. {e}")
+            logger.error(
+                f"Error in listing model tags. {e}{'\n' + e.response.text if isinstance(e, HTTPStatusError) else ''}"
+            )
         finally:
             self._cleanup()
 
@@ -354,7 +359,9 @@ class OllamaDownloaderCLIApp:
             self._initialize()
             await self._model_download(model_tag=model_tag)
         except Exception as e:
-            logger.error(f"Error in downloading model. {e}")
+            logger.error(
+                f"Error in downloading model. {e}{'\n' + e.response.text if isinstance(e, HTTPStatusError) else ''}"
+            )
         finally:
             self._cleanup()
 
@@ -376,7 +383,9 @@ class OllamaDownloaderCLIApp:
             else:
                 print(f"Model identifiers: ({len(result)}): {result}")
         except Exception as e:
-            logger.error(f"Error in listing models. {e}")
+            logger.error(
+                f"Error in listing models. {e}{'\n' + e.response.text if isinstance(e, HTTPStatusError) else ''}"
+            )
         finally:
             self._cleanup()
 
@@ -391,7 +400,9 @@ class OllamaDownloaderCLIApp:
             result = await self._hf_list_tags(model_identifier=model_identifier)
             print(f"Model tags: ({len(result)}): {result}")
         except Exception as e:
-            logger.error(f"Error in listing model tags. {e}")
+            logger.error(
+                f"Error in listing model tags. {e}{'\n' + e.response.text if isinstance(e, HTTPStatusError) else ''}"
+            )
         finally:
             self._cleanup()
 
@@ -403,7 +414,9 @@ class OllamaDownloaderCLIApp:
             self._initialize()
             await self._hf_model_download(user_repo_quant=user_repo_quant)
         except Exception as e:
-            logger.error(f"Error in downloading Hugging Face model. {e}")
+            logger.error(
+                f"Error in downloading Hugging Face model. {e}{'\n' + e.response.text if isinstance(e, HTTPStatusError) else ''}"
+            )
         finally:
             self._cleanup()
 
