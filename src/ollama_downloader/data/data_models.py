@@ -48,7 +48,6 @@ class OllamaLibrary(BaseModel):
         # Windows environment variables: https://learn.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables
         default=os.path.join(
             "~",
-            # if platform.system().lower() != "windows"
             ".ollama",
             "models",
         ),
