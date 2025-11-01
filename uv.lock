@@ -432,13 +432,13 @@ wheels = [
 
 [[package]]
 name = "nuitka"
-version = "2.8.1"
+version = "2.8.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ordered-set" },
     { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/94/c0/96857354765e9024825b7ac29b8c81b12e9dfe310f9ddc3786cd0f0d07b5/Nuitka-2.8.1.tar.gz", hash = "sha256:456fd55c25292252f2dfb26da2c1ee0c0dbeb00106669979b8a2a1f3ae653cb0", size = 3884450, upload-time = "2025-10-12T17:54:49.872Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/87/f20ffda1b6dc04361fa95390f4d47d974ee194e6e1e7688f13d324f3d89b/Nuitka-2.8.4.tar.gz", hash = "sha256:06b020ef33be97194f888dcfcd4c69c8452ceb61b31c7622e610d5156eb7923d", size = 3885111, upload-time = "2025-10-21T10:28:45.499Z" }
 
 [[package]]
 name = "ollama"
@@ -463,7 +463,7 @@ dependencies = [
     { name = "lxml" },
     { name = "ollama" },
     { name = "psutil" },
-    { name = "pywin32", marker = "sys_platform == 'win32' or sys_platform == 'win_amd64' or sys_platform == 'win_arm64'" },
+    { name = "pywin32", marker = "sys_platform == 'win32'" },
     { name = "typer" },
 ]
 
@@ -486,7 +486,7 @@ requires-dist = [
     { name = "lxml", specifier = ">=6.0.0" },
     { name = "ollama", specifier = ">=0.6.0" },
     { name = "psutil", specifier = ">=7.0.0" },
-    { name = "pywin32", marker = "sys_platform == 'win32' or sys_platform == 'win_amd64' or sys_platform == 'win_arm64'", specifier = ">=311" },
+    { name = "pywin32", marker = "sys_platform == 'win32'", specifier = ">=311" },
     { name = "typer", specifier = ">=0.16.0" },
 ]
 
