@@ -1,41 +1,32 @@
-from typer.testing import CliRunner
+from importlib.metadata import version
 
 import pytest
+from typer.testing import CliRunner
 
 from ollama_downloader.cli import app
 from ollama_downloader.data.data_models import AppSettings
 
-from importlib.metadata import version
-
 
 class TestTyperCalls:
-    """
-    Class to group tests related to Typer CLI commands.
-    """
+    """Class to group tests related to Typer CLI commands."""
 
     PACKAGE_NAME = "ollama-downloader"
 
     @pytest.fixture(autouse=True)
     def runner(self):
-        """
-        Fixture to provide a Typer CLI runner for testing.
-        """
+        """Fixture to provide a Typer CLI runner for testing."""
         runner = CliRunner()
         return runner
 
     def test_version(self, runner):
-        """
-        Test the 'version' command of the CLI.
-        """
+        """Test the 'version' command of the CLI."""
         result = runner.invoke(app=app, args=["version"])
         expected_version = version(self.PACKAGE_NAME)
         assert expected_version in result.output
         assert result.exit_code == 0
 
     def test_show_config(self, runner):
-        """
-        Test the 'show-config' command of the CLI.
-        """
+        """Test the 'show-config' command of the CLI."""
         result = runner.invoke(app=app, args=["show-config"])
         assert result.exit_code == 0
         settings = AppSettings.load_settings()
@@ -45,18 +36,14 @@ class TestTyperCalls:
         assert settings.model_dump_json(indent=2) == result.output.strip()
 
     def test_auto_config(self, runner):
-        """
-        Test the 'auto-config' command of the CLI.
-        """
+        """Test the 'auto-config' command of the CLI."""
         result = runner.invoke(app=app, args=["auto-config"])
         assert result.exit_code == 0
         if result.output.strip() != "":
             assert AppSettings.model_validate_json(result.output.strip()) is not None
 
     def test_list_models(self, runner):
-        """
-        Test the 'list-models' command of the CLI.
-        """
+        """Test the 'list-models' command of the CLI."""
         result = runner.invoke(app=app, args=["list-models"])
         assert result.exit_code == 0
         # Expect at least few known models to be listed
@@ -68,9 +55,7 @@ class TestTyperCalls:
         assert "made-up-model-that-should-not-exist" not in result.output.lower()
 
     def test_list_tags(self, runner):
-        """
-        Test the 'list-tags' command of the CLI.
-        """
+        """Test the 'list-tags' command of the CLI."""
         result = runner.invoke(app, ["list-tags", model_identifier := "gpt-oss"])
         assert result.exit_code == 0
         # Expect at least two known tags and a cloud tag to be listed for the gpt-oss model
@@ -85,9 +70,7 @@ class TestTyperCalls:
         assert result.output == ""
 
     def test_model_download(self, runner):
-        """
-        Test the 'model-download' command of the CLI.
-        """
+        """Test the 'model-download' command of the CLI."""
         # Let's try downloading the smallest possible model to stop the test from taking too long
         model_tag = "all-minilm:22m"
         result = runner.invoke(app=app, args=["model-download", model_tag])
@@ -106,9 +89,7 @@ class TestTyperCalls:
         assert f"{model_tag} successfully downloaded and saved" not in result.output
 
     def test_hf_list_models(self, runner):
-        """
-        Test the hf-list-models' command of the CLI.
-        """
+        """Test the hf-list-models' command of the CLI."""
         result = runner.invoke(app=app, args=["hf-list-models", "--page", "4"])
         assert result.exit_code == 0
         # Expect the output to contain at least 25 models on page 4
@@ -117,9 +98,7 @@ class TestTyperCalls:
         assert "made-up-model-that-should-not-exist" not in result.output.lower()
 
     def test_hf_list_tags(self, runner):
-        """
-        Test the 'list-tags' command of the CLI.
-        """
+        """Test the 'list-tags' command of the CLI."""
         result = runner.invoke(
             app,
             ["hf-list-tags", model_identifier := "unsloth/SmolLM2-135M-Instruct-GGUF"],
@@ -136,9 +115,7 @@ class TestTyperCalls:
         assert result.output == ""
 
     def test_hf_model_download(self, runner):
-        """
-        Test the 'hf-model-download' command of the CLI.
-        """
+        """Test the 'hf-model-download' command of the CLI."""
         # Let's try downloading the smallest possible model to stop the test from taking too long
         user_repo_quant = "unsloth/SmolLM2-135M-Instruct-GGUF:Q4_K_M"
         result = runner.invoke(
@@ -154,6 +131,4 @@ class TestTyperCalls:
             args=["hf-model-download", user_repo_quant],
         )
         assert result.exit_code == 0
-        assert (
-            f"{user_repo_quant} successfully downloaded and saved" not in result.output
-        )
+        assert f"{user_repo_quant} successfully downloaded and saved" not in result.output

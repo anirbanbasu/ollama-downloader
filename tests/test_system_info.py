@@ -1,23 +1,28 @@
 import os
+
 import httpx
+
 from ollama_downloader.sysinfo import OllamaSystemInfo
 
 
 class TestOllamaSystemInfo:
-    """
-    Class to group tests related to the OllamaSystemInfo class.
+    """Class to group tests related to the OllamaSystemInfo class.
+
     Assume that Ollama is NOT running as a service/daemon for these tests.
     """
 
     def test_is_running(self):
+        """Test if the Ollama process is running."""
         system_info = OllamaSystemInfo()
         assert system_info.is_running() is True
 
     def test_is_not_windows(self):
+        """Test that the operating system is not Windows."""
         system_info = OllamaSystemInfo()
         assert system_info.is_windows() is False
 
     def test_access_env_vars(self):
+        """Test accessing the environment variables of the Ollama process."""
         system_info = OllamaSystemInfo()
         assert isinstance(system_info.process_env_vars, dict)
         # Assuming that the environment variable "PATH" is set in the Ollama process
@@ -25,6 +30,7 @@ class TestOllamaSystemInfo:
         # assert "OLLAMA_MODELS" in system_info.process_env_vars
 
     def test_process_owner(self):
+        """Test retrieving the process owner information."""
         system_info = OllamaSystemInfo()
         owner_info = system_info.get_process_owner()
         assert isinstance(owner_info, tuple)
@@ -42,12 +48,14 @@ class TestOllamaSystemInfo:
         )  # Assuming Ollama is not running as user/group "ollama"
 
     def test_get_parent_process_id(self):
+        """Test retrieving the parent process ID of the Ollama process."""
         system_info = OllamaSystemInfo()
         parent_pid = system_info.get_parent_process_id()
         assert isinstance(parent_pid, int)
         assert parent_pid > 0  # Parent PID should be a positive integer
 
     def test_infer_listening_on(self):
+        """Test inferring the listening address of the Ollama process."""
         system_info = OllamaSystemInfo()
         listening_on = system_info.infer_listening_on()
         assert listening_on != ""
@@ -59,17 +67,20 @@ class TestOllamaSystemInfo:
 
     # @pytest.mark.skip(reason="Disabled temporarily.")
     def test_is_model_dir_env_var_set(self):
+        """Test checking if the 'OLLAMA_MODELS' environment variable is set in the Ollama process."""
         system_info = OllamaSystemInfo()
         # Assuming that the environment variable "OLLAMA_MODELS" has not been passed to the Ollama process
         assert system_info.is_model_dir_env_var_set() is False
 
     # @pytest.mark.skip(reason="This feature is currently under development.")
     def test_is_likely_daemon(self):
+        """Test checking if Ollama is likely running as a daemon/service."""
         system_info = OllamaSystemInfo()
         assert system_info.is_likely_daemon() is False
 
     # @pytest.mark.skip(reason="This feature is currently under development.")
     def test_infer_models_dir_path(self):
+        """Test inferring the models directory path used by Ollama."""
         system_info = OllamaSystemInfo()
         models_path = os.path.expanduser(system_info.infer_models_dir_path())
         assert models_path is not None

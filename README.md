@@ -1,4 +1,4 @@
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3120/) [![pytest](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml/badge.svg)](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/anirbanbasu/ollama-downloader/latest)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3120/) [![pytest](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest-coverage.yml/badge.svg)](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest-coverage.yml) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/anirbanbasu/ollama-downloader/latest)
  [![PyPI](https://img.shields.io/pypi/v/ollama-downloader?label=pypi%20package)](https://pypi.org/project/ollama-downloader/#history)
 
 # Ollama (library and Hugging Face) model downloader

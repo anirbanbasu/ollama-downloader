@@ -1,5 +1,3 @@
-from abc import ABC, abstractmethod
-from enum import Enum
 import hashlib
 import logging
 import os
@@ -7,51 +5,52 @@ import platform
 import shutil
 import ssl
 import tempfile
-from typing import List, Set, Tuple
+from abc import ABC, abstractmethod
+from enum import Enum
 from urllib.parse import urlparse
-
-from ollama import Client as OllamaClient
 
 import certifi
 import httpx
-
 from environs import env
-
-from ollama_downloader import EnvVar
-
+from ollama import Client as OllamaClient
 from rich.progress import (
-    Progress,
     BarColumn,
-    TextColumn,
     DownloadColumn,
+    Progress,
+    TextColumn,
     TransferSpeedColumn,
 )
 
+from ollama_downloader import EnvVar
 from ollama_downloader.data.data_models import AppSettings
 
 logger = logging.getLogger(__name__)
 
 
 class ModelSource(Enum):
+    """Enumeration of supported model sources."""
+
     OLLAMA = 1
     HUGGINGFACE = 2
 
 
 class ModelDownloader(ABC):
+    """Abstract base class for model downloaders."""
+
     HF_BASE_URL = "https://hf.co/v2/"
 
     def __init__(self):
         self.settings: AppSettings = AppSettings.load_or_create_default()
-        if not self.settings:
+        if not self.settings:  # pragma: no cover
+            # This should never happen because line the AppSettings.load_or_create_default() will create default settings if loading fails.
             raise RuntimeError("Failed to load or create and save default settings.")
         self._user_agent: str = f"{EnvVar.OD_UA_NAME_VER} ({platform.platform()} {platform.system()}-{platform.release()} Python-{platform.python_version()})"
-        self._unnecessary_files: Set[str] = set()
+        self._unnecessary_files: set[str] = set()
         self._cleanup_running: bool = False
 
     @abstractmethod
     def download_model(self, model_identifier: str) -> bool:
-        """
-        Download a supported model into an available Ollama server.
+        """Download a supported model into an available Ollama server.
 
         Args:
             model_identifier (str): The model tag to download, e.g., "gpt-oss:latest" for library models.
@@ -64,11 +63,9 @@ class ModelDownloader(ABC):
         pass
 
     @abstractmethod
-    def list_available_models(
-        self, page: int | None = None, page_size: int | None = None
-    ) -> List[str]:
-        """
-        List available models. If pagination is supported by the source, page and page_size can be used to control the results.
+    def list_available_models(self, page: int | None = None, page_size: int | None = None) -> list[str]:
+        """List available models. If pagination is supported by the source, page and page_size can be used to control the results.
+
         If pagination is not supported or the page and page_size are None, the number of models will be returned will depend on
         the implementing sub-class.
 
@@ -82,9 +79,8 @@ class ModelDownloader(ABC):
         pass
 
     @abstractmethod
-    def list_model_tags(self, model_identifier: str) -> List[str]:
-        """
-        List available tags for a specific model.
+    def list_model_tags(self, model_identifier: str) -> list[str]:
+        """List available tags for a specific model.
 
         Args:
             model_identifier (str): The name of the model to list tags for, e.g., "gpt-oss" for an Ollama library model
@@ -97,8 +93,7 @@ class ModelDownloader(ABC):
         pass
 
     def get_httpx_client(self, verify: bool, timeout: float) -> httpx.Client:
-        """
-        Obtain an HTTPX client for making requests.
+        """Obtain an HTTPX client for making requests.
 
         Args:
             verify (bool): Whether to verify SSL certificates.
@@ -107,10 +102,9 @@ class ModelDownloader(ABC):
         Returns:
             httpx.Client: An HTTPX client configured with the specified settings.
         """
-        if verify is False:
-            logger.warning(
-                "SSL verification is disabled. This is not recommended for production use."
-            )
+        if verify is False:  # pragma: no cover
+            # This branch is not tested because it simply outputs a warning message to logs.
+            logger.warning("SSL verification is disabled. This is not recommended for production use.")
         ctx = ssl.create_default_context(
             cafile=env.str("SSL_CERT_FILE", default=certifi.where()),
             capath=env.str("SSL_CERT_DIR", default=None),
@@ -125,11 +119,8 @@ class ModelDownloader(ABC):
         )
         return client
 
-    def _make_manifest_url(
-        self, model_identifier: str, model_source: ModelSource
-    ) -> httpx.URL:
-        """
-        Constructs the manifest URL for a given model identifier.
+    def _make_manifest_url(self, model_identifier: str, model_source: ModelSource) -> httpx.URL:
+        """Constructs the manifest URL for a given model identifier.
 
         Args:
             model_identifier (str): The model identifier, e.g., "gpt-oss:latest" for an Ollama library model
@@ -139,17 +130,11 @@ class ModelDownloader(ABC):
         Returns:
             httpx.URL: The constructed manifest URL.
         """
-        model, tag = (
-            model_identifier.split(":")
-            if ":" in model_identifier
-            else (model_identifier, "latest")
-        )
+        model, tag = model_identifier.split(":") if ":" in model_identifier else (model_identifier, "latest")
         match model_source:
             case ModelSource.OLLAMA:
                 logger.debug(f"Constructing manifest URL for {model}:{tag}")
-                return httpx.URL(self.settings.ollama_library.registry_base_url).join(
-                    f"{model}/manifests/{tag}"
-                )
+                return httpx.URL(self.settings.ollama_library.registry_base_url).join(f"{model}/manifests/{tag}")
             case ModelSource.HUGGINGFACE:
                 logger.debug(f"Constructing manifest URL for {model_identifier}")
                 hf_model_identifier = (
@@ -158,12 +143,11 @@ class ModelDownloader(ABC):
                     else f"{model_identifier}/manifests/{tag}"
                 )
                 return httpx.URL(f"{ModelDownloader.HF_BASE_URL}{hf_model_identifier}")
-            case _:
+            case _:  # pragma: no cover
                 raise ValueError(f"Unsupported model source: {model_source}")
 
     def _fetch_manifest(self, model_identifier: str, model_source: ModelSource) -> str:
-        """
-        Fetches the manifest JSON content for a given model identifier.
+        """Fetches the manifest JSON content for a given model identifier.
 
         Args:
             model_identifier (str): The model identifier, e.g., "gpt-oss:latest" for an Ollama library model
@@ -183,11 +167,8 @@ class ModelDownloader(ABC):
             response.raise_for_status()
             return response.text
 
-    def _make_blob_url(
-        self, model_identifier: str, digest: str, model_source: ModelSource
-    ) -> httpx.URL:
-        """
-        Constructs the blob URL for a given model and digest.
+    def _make_blob_url(self, model_identifier: str, digest: str, model_source: ModelSource) -> httpx.URL:
+        """Constructs the blob URL for a given model and digest.
 
         Args:
             model_identifier (str): The model name, e.g., "gpt-oss:latest".
@@ -197,9 +178,7 @@ class ModelDownloader(ABC):
         Returns:
             httpx.URL: The constructed blob URL.
         """
-        logger.debug(
-            f"Constructing blob URL for {model_identifier} with digest {digest}"
-        )
+        logger.debug(f"Constructing blob URL for {model_identifier} with digest {digest}")
         model_name = model_identifier.split(":")[0]
         match model_source:
             case ModelSource.OLLAMA:
@@ -207,17 +186,12 @@ class ModelDownloader(ABC):
                     f"{model_name}/blobs/{digest.replace(':', '-')}"
                 )
             case ModelSource.HUGGINGFACE:
-                return httpx.URL(
-                    f"{ModelDownloader.HF_BASE_URL}{model_name}/blobs/{digest}"
-                )
-            case _:
+                return httpx.URL(f"{ModelDownloader.HF_BASE_URL}{model_name}/blobs/{digest}")
+            case _:  # pragma: no cover
                 raise ValueError(f"Unsupported model source: {model_source}")
 
-    def _download_model_blob(
-        self, model_identifier: str, named_digest: str, model_source: ModelSource
-    ) -> tuple:
-        """
-        Downloads a model blob given its named digest.
+    def _download_model_blob(self, model_identifier: str, named_digest: str, model_source: ModelSource) -> tuple:
+        """Downloads a model blob given its named digest.
 
         Args:
             model_identifier (str): The model name, e.g., "gpt-oss:latest".
@@ -257,19 +231,14 @@ class ModelDownloader(ABC):
                     for chunk in response.iter_bytes():
                         sha256_hash.update(chunk)
                         temp_file.write(chunk)
-                        progress.update(
-                            download_task, completed=response.num_bytes_downloaded
-                        )
+                        progress.update(download_task, completed=response.num_bytes_downloaded)
         logger.debug(f"Downloaded {url} to {temp_file.name}")
         content_digest = sha256_hash.hexdigest()
         logger.debug(f"Computed SHA256 digest of {temp_file.name}: {content_digest}")
         return temp_file.name, content_digest
 
-    def _save_manifest(
-        self, data: str, model_identifier: str, model_source: ModelSource
-    ):
-        """
-        Saves the manifest data to the appropriate location based on the model source.
+    def _save_manifest(self, data: str, model_identifier: str, model_source: ModelSource):
+        """Saves the manifest data to the appropriate location based on the model source.
 
         Args:
             data (str): The manifest JSON content as a string.
@@ -290,15 +259,12 @@ class ModelDownloader(ABC):
         )
         model_identifier_splits = model_identifier.split(":")
         manifests_dir = None
-        model_source_host = None
         match model_source:
             case ModelSource.OLLAMA:
-                model_source_host = urlparse(
-                    self.settings.ollama_library.registry_base_url
-                ).hostname
+                model_source_host = urlparse(self.settings.ollama_library.registry_base_url).hostname
                 manifests_dir = os.path.join(
                     manifests_toplevel_dir,
-                    model_source_host,
+                    model_source_host or "",  # model_source_host should never be None really
                     "library",
                     model_identifier_splits[0],
                 )
@@ -306,17 +272,15 @@ class ModelDownloader(ABC):
                 model_source_host = urlparse(ModelDownloader.HF_BASE_URL).hostname
                 manifests_dir = os.path.join(
                     manifests_toplevel_dir,
-                    # FIXME: This is a hack for mypy -- the model_source_host should not be None
-                    model_source_host or "",
+                    model_source_host or "",  # model_source_host should never be None really
                     model_identifier_splits[0],
                 )
-            case _:
+            case _:  # pragma: no cover
                 raise ValueError(f"Unsupported model source: {model_source}")
         if not os.path.exists(manifests_dir):
-            logger.warning(
-                f"Manifests path {manifests_dir} does not exist. Will attempt to create it."
-            )
+            logger.warning(f"Manifests path {manifests_dir} does not exist. Will attempt to create it.")
             os.makedirs(manifests_dir)
+            # FIXME: But this will also delete it for successful downloads.
             self._unnecessary_files.add(manifests_dir)
         target_file = os.path.join(manifests_dir, model_identifier_splits[1])
         with open(target_file, "w") as f:
@@ -329,9 +293,7 @@ class ModelDownloader(ABC):
             # TODO: Is this necessary or can the ownership change to the top-level directory cascade down?
             shutil.chown(manifests_dir, user, group)
             shutil.chown(manifests_toplevel_dir, user, group)
-            logger.info(
-                f"Changed ownership of {target_file} to user: {user}, group: {group}"
-            )
+            logger.info(f"Changed ownership of {target_file} to user: {user}, group: {group}")
         self._unnecessary_files.add(target_file)
         return target_file
 
@@ -340,9 +302,8 @@ class ModelDownloader(ABC):
         source: str,
         named_digest: str,
         computed_digest: str,
-    ) -> Tuple[bool, str | None]:
-        """
-        Saves the downloaded blob to the appropriate location based on the model source.
+    ) -> tuple[bool, str | None]:
+        """Saves the downloaded blob to the appropriate location based on the model source.
 
         Args:
             source (str): The path to the downloaded BLOB.
@@ -354,9 +315,7 @@ class ModelDownloader(ABC):
             and the path to the saved BLOB if successful, None otherwise.
         """
         if computed_digest != named_digest[7:]:
-            logger.error(
-                f"Digest mismatch: expected {named_digest[7:]}, got {computed_digest}"
-            )
+            logger.error(f"Digest mismatch: expected {named_digest[7:]}, got {computed_digest}")
             return False, None
 
         blobs_dir = os.path.join(
@@ -386,15 +345,11 @@ class ModelDownloader(ABC):
             shutil.chown(blobs_dir, user, group)
             # Set permissions to rw-r-----
             os.chmod(target_file, 0o640)
-            logger.info(
-                f"Changed ownership of {target_file} to user: {user}, group: {group}"
-            )
+            logger.info(f"Changed ownership of {target_file} to user: {user}, group: {group}")
         return True, target_file
 
     def cleanup_unnecessary_files(self):
-        """
-        Cleans up unnecessary files and directories created during downloading models.
-        """
+        """Cleans up unnecessary files and directories created during downloading models."""
         # TODO: Is this thread-safe? Should we use a lock?
         if not self._cleanup_running:
             self._cleanup_running = True
@@ -410,9 +365,7 @@ class ModelDownloader(ABC):
                         unnecessary_directories.add(file_object)
                     self._unnecessary_files.remove(file_object)
                 except Exception as e:
-                    logger.error(
-                        f"Failed to remove unnecessary file {file_object}: {e}"
-                    )
+                    logger.error(f"Failed to remove unnecessary file {file_object}: {e}")
 
             # Now remove unnecessary directories if they are empty
             for directory in unnecessary_directories:
@@ -420,23 +373,17 @@ class ModelDownloader(ABC):
                     os.rmdir(directory)
                     logger.info(f"Removed unnecessary directory: {directory}")
                 except OSError as e:
-                    logger.error(
-                        f"Failed to remove unnecessary directory {directory}: {e}"
-                    )
+                    logger.error(f"Failed to remove unnecessary directory {directory}: {e}")
             self._cleanup_running = False
 
     def remove_model(self, model_identifier: str) -> bool:  # pragma: no cover
-        """
-        Removes a model from the Ollama server.
-        """
+        """Removes a model from the Ollama server."""
         ollama_client = OllamaClient(
             host=self.settings.ollama_server.url,
             # timeout=self.settings.ollama_server.timeout,
             # TODO: Add API key authentication logic
         )
-        search_model = (
-            f"{urlparse(ModelDownloader.HF_BASE_URL).hostname}/{model_identifier}"
-        )
+        search_model = f"{urlparse(ModelDownloader.HF_BASE_URL).hostname}/{model_identifier}"
         response = ollama_client.delete(search_model)
         if hasattr(response, "status") and response.status == "success":
             logger.info(

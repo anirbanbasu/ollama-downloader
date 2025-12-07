@@ -1,16 +1,15 @@
 import datetime
 import logging
-from typing import Annotated, List, Optional, Tuple
+from typing import Annotated
 from urllib.parse import urlparse
 
-
+# import lxml.html
+from ollama import Client as OllamaClient
 from pydantic import Field
 
 from ollama_downloader.data.data_models import ImageManifest
 from ollama_downloader.downloader.model_downloader import ModelDownloader, ModelSource
 
-# import lxml.html
-from ollama import Client as OllamaClient
 # from huggingface_hub import configure_http_backend
 # import requests  # type: ignore
 
@@ -19,6 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 class HuggingFaceModelDownloader(ModelDownloader):
+    """Downloader for Hugging Face models compatible with Ollama."""
+
     def __init__(self):
         super().__init__()
 
@@ -28,18 +29,14 @@ class HuggingFaceModelDownloader(ModelDownloader):
             model_identifier.split(":")[0].split("/"),
             model_identifier.split(":")[1] if ":" in model_identifier else "latest",
         )
-        print(
-            f"Downloading Hugging Face model {model_repo} from {user} with {quant} quantisation"
-        )
-        manifest_json = self._fetch_manifest(
-            model_identifier=model_identifier, model_source=ModelSource.HUGGINGFACE
-        )
+        print(f"Downloading Hugging Face model {model_repo} from {user} with {quant} quantisation")
+        manifest_json = self._fetch_manifest(model_identifier=model_identifier, model_source=ModelSource.HUGGINGFACE)
         logger.info(f"Validating manifest for {model_identifier}")
         manifest = ImageManifest.model_validate_json(manifest_json, strict=True)
         # Keep a list of files to be copied but only copy after all downloads have completed successfully.
         # This is to ensure that we don't copy files that may not be needed if the download fails.
         # Each tuple in the list contains (source_path, named_digest, computed_digest).
-        files_to_be_copied: List[Tuple[str, str, str]] = []
+        files_to_be_copied: list[tuple[str, str, str]] = []
         # Download the model configuration BLOB
         logger.info(f"Downloading model configuration {manifest.config.digest}")
         file_model_config, digest_model_config = self._download_model_blob(
@@ -47,15 +44,11 @@ class HuggingFaceModelDownloader(ModelDownloader):
             named_digest=manifest.config.digest,
             model_source=ModelSource.HUGGINGFACE,
         )
-        files_to_be_copied.append(
-            (file_model_config, manifest.config.digest, digest_model_config)
-        )
+        files_to_be_copied.append((file_model_config, manifest.config.digest, digest_model_config))
         # The layers could be null for cloud-hosted Ollama models but this is here only for consistency.
         if manifest.layers:
             for layer in manifest.layers:
-                logger.debug(
-                    f"Layer: {layer.mediaType}, Size: {layer.size} bytes, Digest: {layer.digest}"
-                )
+                logger.debug(f"Layer: {layer.mediaType}, Size: {layer.size} bytes, Digest: {layer.digest}")
                 logger.info(f"Downloading {layer.mediaType} layer {layer.digest}")
                 file_layer, digest_layer = self._download_model_blob(
                     model_identifier=model_identifier,
@@ -71,9 +64,7 @@ class HuggingFaceModelDownloader(ModelDownloader):
                 computed_digest=computed_digest,
             )
             if copy_status is False:
-                raise RuntimeError(
-                    f"Failed to copy {named_digest} to {copy_destination}."
-                )
+                raise RuntimeError(f"Failed to copy {named_digest} to {copy_destination}.")  # pragma: no cover
         # Finally, save the manifest to its appropriate destination
         self._save_manifest(
             data=manifest_json,
@@ -92,17 +83,14 @@ class HuggingFaceModelDownloader(ModelDownloader):
         )
         models_list = ollama_client.list()
         found_model = None
-        search_model = (
-            f"{urlparse(ModelDownloader.HF_BASE_URL).hostname}/{model_identifier}"
-        )
+        search_model = f"{urlparse(ModelDownloader.HF_BASE_URL).hostname}/{model_identifier}"
         for model_info in models_list.models:
+            modified_at_timestamp = model_info.modified_at
             if (
-                model_info.model == search_model
+                modified_at_timestamp  # Modified at could be None, ignore such cases.
+                and model_info.model == search_model
                 # TODO: Is this timestamp assumption right that the listing is completed within a minute of saving?
-                and abs(
-                    model_info.modified_at.replace(tzinfo=None)
-                    - ts_approximate_manifest_save
-                )
+                and abs(modified_at_timestamp.replace(tzinfo=None) - ts_approximate_manifest_save)
                 < datetime.timedelta(minutes=1)
             ):
                 found_model = model_info
@@ -114,16 +102,16 @@ class HuggingFaceModelDownloader(ModelDownloader):
         else:
             raise RuntimeError(
                 f"Model {search_model} could not be found in Ollama server after download."
-            )
+            )  # pragma: no cover
         # If we reached here cleanly, remove all unnecessary file names but don't remove actual files.
         self._unnecessary_files.clear()
         return True
 
     def list_available_models(
         self,
-        page: Annotated[Optional[int], Field(gt=0)] = None,
-        page_size: Annotated[Optional[int], Field(gt=0, le=100)] = None,
-    ) -> List[str]:
+        page: Annotated[int | None, Field(gt=0)] = None,
+        page_size: Annotated[int | None, Field(gt=0, le=100)] = None,
+    ) -> list[str]:
         page_size = page_size or 100
         next_page = 1
         page = page or 1
@@ -132,10 +120,11 @@ class HuggingFaceModelDownloader(ModelDownloader):
                 "Hugging Face currently does not allow paging beyond the first 999 models. Follow issue 2741: https://github.com/huggingface/huggingface_hub/issues/2741"
             )
             raise ValueError(
-                f"Hugging Face currently does not allow obtaining information beyond the first 999 models. Your requested page {page} with page size {page_size} exceeds this limit by {int(((page + 1) * page_size - 999))} model(s)."
+                f"Hugging Face currently does not allow obtaining information beyond the first 999 models. Your requested page {page} with page size {page_size} exceeds this limit by {int((page + 1) * page_size - 999)} model(s)."
             )
         api_url = f"https://huggingface.co/api/models?apps=ollama&gated=false&limit={page_size}&sort=trendingScore"
         next_page_url = api_url
+        model_identifiers: list[str] = []
 
         with self.get_httpx_client(
             self.settings.ollama_library.verify_ssl,
@@ -151,16 +140,12 @@ class HuggingFaceModelDownloader(ModelDownloader):
                     logger.info(f"Requesting page {next_page} from {next_page_url}")
                 models_response = client.get(next_page_url)
                 models_response.raise_for_status()
-            model_identifiers = [
-                model["modelId"] for model in list(models_response.json())
-            ]
-        logger.warning(
-            "HuggingFace models are sorted in the context of the selected page only."
-        )
+                model_identifiers = [model["modelId"] for model in list(models_response.json())]
+        logger.warning("HuggingFace models are sorted in the context of the selected page only.")
         model_identifiers.sort(key=lambda s: s.lower())
         return model_identifiers
 
-    def list_model_tags(self, model_identifier: str) -> List[str]:
+    def list_model_tags(self, model_identifier: str) -> list[str]:
         api_url = f"https://huggingface.co/api/models/{model_identifier}?blobs=true"
         tags = []
         with self.get_httpx_client(
@@ -179,8 +164,6 @@ class HuggingFaceModelDownloader(ModelDownloader):
                     tags.append(f"{model_identifier}:{tag}")
         if len(tags) == 0:
             # If no .gguf files found, the model is not for Ollama
-            raise RuntimeError(
-                f"The model {model_identifier} has no support for Ollama."
-            )
+            raise RuntimeError(f"The model {model_identifier} has no support for Ollama.")
         tags.sort(key=lambda s: s.lower())
         return tags
