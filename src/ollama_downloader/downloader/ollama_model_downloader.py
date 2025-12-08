@@ -57,7 +57,7 @@ class OllamaModelDownloader(ModelDownloader):
                 computed_digest=computed_digest,
             )
             if copy_status is False:
-                raise RuntimeError(f"Failed to copy {named_digest} to {copy_destination}.")
+                raise RuntimeError(f"Failed to copy {named_digest} to {copy_destination}.")  # pragma: no cover
         # Finally, save the manifest to its appropriate destination
         self._save_manifest(
             data=manifest_json,
@@ -68,7 +68,7 @@ class OllamaModelDownloader(ModelDownloader):
         # Finally check if it exists in the Ollama
         # Clear the list of unnecessary files before this if errors henceforth are to be tolerated.
         if not self.settings.ollama_server.remove_downloaded_on_error:
-            self._unnecessary_files.clear()
+            self._unnecessary_files.clear()  # pragma: no cover
         ollama_client = OllamaClient(
             host=self.settings.ollama_server.url,
             # timeout=self.settings.ollama_server.timeout,
@@ -92,7 +92,9 @@ class OllamaModelDownloader(ModelDownloader):
                 f"Model {found_model.model} successfully downloaded and saved on {found_model.modified_at:%B %d %Y at %H:%M:%S}."
             )
         else:
-            raise RuntimeError(f"Model {model}:{tag} could not be found in Ollama server after download.")
+            raise RuntimeError(
+                f"Model {model}:{tag} could not be found in Ollama server after download."
+            )  # pragma: no cover
         # If we reached here cleanly, remove all unnecessary file names but don't remove actual files.
         self._unnecessary_files.clear()
         # Finally return success

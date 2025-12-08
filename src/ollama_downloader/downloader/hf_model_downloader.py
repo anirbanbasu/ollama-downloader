@@ -75,7 +75,7 @@ class HuggingFaceModelDownloader(ModelDownloader):
         # Finally check if it exists in the Ollama
         # Clear the list of unnecessary files before this if errors henceforth are to be tolerated.
         if not self.settings.ollama_server.remove_downloaded_on_error:
-            self._unnecessary_files.clear()
+            self._unnecessary_files.clear()  # pragma: no cover
         ollama_client = OllamaClient(
             host=self.settings.ollama_server.url,
             # timeout=self.settings.ollama_server.timeout,

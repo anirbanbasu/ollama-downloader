@@ -55,9 +55,14 @@ class TestTyperCalls:
         assert "made-up-model-that-should-not-exist" not in result.output.lower()
 
         # Test with paging for coverage
-        result = runner.invoke(app=app, args=["list-models", "--page=1", "--page-size=10"])
+        result = runner.invoke(app=app, args=["list-models", "--page", "1", "--page-size", "10"])
         assert result.exit_code == 0
         assert "Model identifiers: (10, page 1)" in result.output
+
+        result = runner.invoke(app=app, args=["list-models", "--page", "1200", "--page-size", "10"])
+        assert result.exit_code == 0
+        # Will succeed but will warn about the page size exceeding the limit
+        assert "Model identifiers:" in result.output
 
     def test_list_tags(self, runner):
         """Test the 'list-tags' command of the CLI."""
@@ -101,8 +106,9 @@ class TestTyperCalls:
         # Models change often on Hugging Face, so we cannot check for specific models
         assert "25, page 4" in result.output.lower()
         assert "made-up-model-that-should-not-exist" not in result.output.lower()
-        result = runner.invoke(app=app, args=["hf-list-models", "--page", "4"])
+        result = runner.invoke(app=app, args=["hf-list-models", "--page", "11", "--page-size", "100"])
         assert result.exit_code == 0
+        assert result.output == ""
 
     def test_hf_list_tags(self, runner):
         """Test the 'list-tags' command of the CLI."""
@@ -114,6 +120,15 @@ class TestTyperCalls:
         # Expect at least two known tags to be listed for the gpt-oss model
         assert f"{model_identifier}:F16" in result.output
         assert f"{model_identifier}:Q4_K_M" in result.output
+        # Test with a model that does not have support for Ollama
+        result = runner.invoke(
+            app=app,
+            args=["hf-list-tags", "facebook/sam3"],
+        )
+        assert result.exit_code == 0
+        # TODO: We should capture the error from the logging messages
+        assert result.output == ""
+        # Test with a made-up model that should not exist
         result = runner.invoke(
             app=app,
             args=["hf-list-tags", "made-up-model-that-should-not-exist"],
