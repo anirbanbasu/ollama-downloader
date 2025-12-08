@@ -55,6 +55,7 @@ export MCP_SERVER_TRANSPORT := "streamable-http"
 test-coverage:
     @echo "Running tests with coverage..."
     # Check if configuration directory exists and back it up, if it does
+    @rm -fR {{conf_backup_dir}}
     @[ -d {{conf_dir}} ] && mv {{conf_dir}} {{conf_backup_dir}} && echo "Configuration backed up." || echo "Configuration does not exist, skipping backup."
     @uv run --group test coverage run -m pytest --capture=tee-sys -vvv tests/
     # Remove the configuration directory to simulate a fresh environment

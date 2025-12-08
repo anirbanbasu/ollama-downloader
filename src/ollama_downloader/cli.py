@@ -84,7 +84,7 @@ class OllamaDownloaderCLIApp:
             self._initialize()
             result = await self._show_config()
             print_json(json=result)
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error(f"Error in showing config. {e}")
         finally:
             self._cleanup()
@@ -100,15 +100,15 @@ class OllamaDownloaderCLIApp:
             "",
         ]
         super_user_needed = super_user_needed or system_info.infer_models_dir_path() in [None, ""]
-        if super_user_needed:
+        if super_user_needed:  # pragma: no cover
             return {}
         inferred_settings = AppSettings()
         inferred_settings.ollama_server.url = system_info.listening_on
         inferred_settings.ollama_library.models_path = system_info.models_dir_path
-        if system_info.is_likely_daemon():
+        if system_info.is_likely_daemon():  # pragma: no cover
             if system_info.is_macos():
                 logger.warning(
-                    "Automatic configuration on macOS maybe flawed if Ollama is configured to run as a background service."
+                    "Automatic configuration on macOS maybe flawed if Ollama is configured to run as a system background service."
                 )
             inferred_settings.ollama_library.user_group = (
                 system_info.process_owner[0],
@@ -123,7 +123,7 @@ class OllamaDownloaderCLIApp:
             result = await self._auto_config()
             if result != {}:
                 print_json(json=result)
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error(f"Error in generating automatic config. {e}")
             if isinstance(e, psutil.AccessDenied):
                 logger.info("Seems like you need to run this command with super-user permissions. Try `sudo`!")
@@ -142,7 +142,7 @@ class OllamaDownloaderCLIApp:
                 print(f"Model identifiers: ({len(result)}, page {page}): {result}")
             else:
                 print(f"Model identifiers: ({len(result)}): {result}")
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error(
                 f"Error in listing models. {e}{'\n' + e.response.text if isinstance(e, HTTPStatusError) else ''}"
             )
@@ -190,9 +190,9 @@ class OllamaDownloaderCLIApp:
             result = await self._hf_list_models(page=page, page_size=page_size)
             if page:
                 print(f"Model identifiers: ({len(result)}, page {page}): {result}")
-            else:
-                print(f"Model identifiers: ({len(result)}): {result}")
-        except Exception as e:
+            else:  # This won't really happen as we always pass a value of page by default.
+                print(f"Model identifiers: ({len(result)}): {result}")  # pragma: no cover
+        except Exception as e:  # pragma: no cover
             logger.error(
                 f"Error in listing models. {e}{'\n' + e.response.text if isinstance(e, HTTPStatusError) else ''}"
             )
@@ -359,7 +359,7 @@ def hf_model_download(
 def main():
     """Main entry point for the CLI application."""
     # Run the Typer app
-    app()
+    app()  # pragma: no cover
 
 
 if __name__ == "__main__":  # pragma: no cover

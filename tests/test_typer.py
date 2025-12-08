@@ -54,6 +54,11 @@ class TestTyperCalls:
         assert "deepseek" in result.output.lower()
         assert "made-up-model-that-should-not-exist" not in result.output.lower()
 
+        # Test with paging for coverage
+        result = runner.invoke(app=app, args=["list-models", "--page=1", "--page-size=10"])
+        assert result.exit_code == 0
+        assert "Model identifiers: (10, page 1)" in result.output
+
     def test_list_tags(self, runner):
         """Test the 'list-tags' command of the CLI."""
         result = runner.invoke(app, ["list-tags", model_identifier := "gpt-oss"])
@@ -96,6 +101,8 @@ class TestTyperCalls:
         # Models change often on Hugging Face, so we cannot check for specific models
         assert "25, page 4" in result.output.lower()
         assert "made-up-model-that-should-not-exist" not in result.output.lower()
+        result = runner.invoke(app=app, args=["hf-list-models", "--page", "4"])
+        assert result.exit_code == 0
 
     def test_hf_list_tags(self, runner):
         """Test the 'list-tags' command of the CLI."""
