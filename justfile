@@ -1,3 +1,6 @@
+conf_dir := quote(invocation_dir() / "conf")
+conf_backup_dir := quote(invocation_dir() / "conf_backup")
+
 # Install minimal project dependencies in a virtual environment
 install:
     @echo "Installing project dependencies in a virtual environment..."
@@ -51,9 +54,12 @@ export MCP_SERVER_TRANSPORT := "streamable-http"
 # Run tests with coverage reporting
 test-coverage:
     @echo "Running tests with coverage..."
-    @mv ./conf ./conf-backup
+    # Check if configuration directory exists and back it up, if it does
+    @[ -d {{conf_dir}} ] && mv {{conf_dir}} {{conf_backup_dir}} && echo "Configuration backed up." || echo "Configuration does not exist, skipping backup."
     @uv run --group test coverage run -m pytest --capture=tee-sys -vvv tests/
-    @rm -fR ./conf
-    @mv ./conf-backup ./conf
+    # Remove the configuration directory to simulate a fresh environment
+    @rm -fR {{conf_dir}}
+    # Check if configuration backup directory exists and restore from it, if it does
+    @[ -d {{conf_backup_dir}} ] && mv {{conf_backup_dir}} {{conf_dir}} && echo "Configuration restored." || echo "Configuration did not exist, skipping restore."
     @uv run coverage report -m
     @echo "Test coverage complete."
