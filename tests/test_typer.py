@@ -6,6 +6,8 @@ from typer.testing import CliRunner
 
 from ollama_downloader.cli import app
 from ollama_downloader.data.data_models import AppSettings
+from ollama_downloader.downloader.hf_model_downloader import HuggingFaceModelDownloader
+from ollama_downloader.downloader.ollama_model_downloader import OllamaModelDownloader
 
 
 class TestTyperCalls:
@@ -43,7 +45,7 @@ class TestTyperCalls:
         if result.output.strip() != "":
             assert AppSettings.model_validate_json(result.output.strip()) is not None
 
-    def test_list_models(self, runner):
+    def test_list_models(self, runner, caplog):
         """Test the 'list-models' command of the CLI."""
         result = runner.invoke(app=app, args=["list-models"])
         assert result.exit_code == 0
@@ -60,10 +62,16 @@ class TestTyperCalls:
         assert result.exit_code == 0
         assert "Model identifiers: (10, page 1)" in result.output
 
-        result = runner.invoke(app=app, args=["list-models", "--page", "1200", "--page-size", "10"])
-        assert result.exit_code == 0
-        # Will succeed but will warn about the page size exceeding the limit
-        assert "Model identifiers:" in result.output
+        with caplog.at_level(logging.INFO):
+            result = runner.invoke(app=app, args=["list-models", "--page", "1200", "--page-size", "10"])
+            assert result.exit_code == 0
+            # Will succeed but will warn about the page size exceeding the limit
+            assert any(
+                "No models found for the specified page 1200 and page size 10. Returning all models instead."
+                in record.message
+                for record in caplog.records
+            ), "Expected warning log message not found."
+            assert "Model identifiers:" in result.output
 
     def test_list_tags(self, runner):
         """Test the 'list-tags' command of the CLI."""
@@ -84,6 +92,8 @@ class TestTyperCalls:
         """Test the 'model-download' command of the CLI."""
         # Let's try downloading the smallest possible model to stop the test from taking too long
         model_tag = "all-minilm:22m"
+        ollama_model_downloader = OllamaModelDownloader()
+        ollama_model_downloader.remove_model(model_identifier=model_tag)
         result = runner.invoke(app=app, args=["model-download", model_tag])
         assert result.exit_code == 0
         assert f"{model_tag} successfully downloaded and saved" in result.output
@@ -151,6 +161,8 @@ class TestTyperCalls:
         """Test the 'hf-model-download' command of the CLI."""
         # Let's try downloading the smallest possible model to stop the test from taking too long
         user_repo_quant = "unsloth/SmolLM2-135M-Instruct-GGUF:Q4_K_M"
+        hf_model_downloader = HuggingFaceModelDownloader()
+        hf_model_downloader.remove_model(model_identifier=user_repo_quant)
         result = runner.invoke(
             app=app,
             args=["hf-model-download", user_repo_quant],

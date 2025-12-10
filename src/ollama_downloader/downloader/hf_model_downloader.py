@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Annotated
+from typing import Annotated, override
 from urllib.parse import urlparse
 
 # import lxml.html
@@ -78,8 +78,6 @@ class HuggingFaceModelDownloader(ModelDownloader):
             self._unnecessary_files.clear()  # pragma: no cover
         ollama_client = OllamaClient(
             host=self.settings.ollama_server.url,
-            # timeout=self.settings.ollama_server.timeout,
-            # TODO: Add API key authentication logic
         )
         models_list = ollama_client.list()
         found_model = None
@@ -167,3 +165,8 @@ class HuggingFaceModelDownloader(ModelDownloader):
             raise RuntimeError(f"The model {model_identifier} has no support for Ollama.")
         tags.sort(key=lambda s: s.lower())
         return tags
+
+    @override
+    def remove_model(self, model_identifier: str, model_source: ModelSource = ModelSource.HUGGINGFACE) -> bool:
+        """Removes a HuggingFace model from the Ollama server."""
+        return super().remove_model(model_identifier=model_identifier, model_source=model_source)

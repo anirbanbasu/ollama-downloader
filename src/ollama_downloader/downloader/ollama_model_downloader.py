@@ -1,5 +1,6 @@
 import datetime
 import logging
+from typing import override
 
 import lxml.html
 from httpx import URL
@@ -71,8 +72,6 @@ class OllamaModelDownloader(ModelDownloader):
             self._unnecessary_files.clear()  # pragma: no cover
         ollama_client = OllamaClient(
             host=self.settings.ollama_server.url,
-            # timeout=self.settings.ollama_server.timeout,
-            # TODO: Add API key authentication logic
         )
         models_list = ollama_client.list()
         found_model = None
@@ -155,3 +154,8 @@ class OllamaModelDownloader(ModelDownloader):
             models_tags.sort(key=lambda s: s.lower())
 
             return models_tags
+
+    @override
+    def remove_model(self, model_identifier: str, model_source: ModelSource = ModelSource.OLLAMA) -> bool:
+        """Removes a Ollama model from the Ollama server."""
+        return super().remove_model(model_identifier=model_identifier, model_source=model_source)

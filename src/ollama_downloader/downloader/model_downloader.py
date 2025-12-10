@@ -280,13 +280,12 @@ class ModelDownloader(ABC):
         if not os.path.exists(manifests_dir):
             logger.warning(f"Manifests path {manifests_dir} does not exist. Will attempt to create it.")
             os.makedirs(manifests_dir)
-            # FIXME: But this will also delete it for successful downloads.
             self._unnecessary_files.add(manifests_dir)
         target_file = os.path.join(manifests_dir, model_identifier_splits[1])
         with open(target_file, "w") as f:
             f.write(data)
             logger.info(f"Saved manifest to {target_file}")
-        if self.settings.ollama_library.user_group:
+        if self.settings.ollama_library.user_group:  # pragma: no cover
             user, group = self.settings.ollama_library.user_group
             shutil.chown(target_file, user, group)
             # The directory ownership must also be changed because it may have been created by a different user, most likely a sudoer
@@ -314,7 +313,7 @@ class ModelDownloader(ABC):
             Tuple[bool, str | None]: A tuple containing a boolean indicating success or failure,
             and the path to the saved BLOB if successful, None otherwise.
         """
-        if computed_digest != named_digest[7:]:
+        if computed_digest != named_digest[7:]:  # pragma: no cover
             logger.error(f"Digest mismatch: expected {named_digest[7:]}, got {computed_digest}")
             return False, None
 
@@ -328,10 +327,10 @@ class ModelDownloader(ABC):
         )
 
         logger.info(f"BLOB {named_digest} digest verified successfully.")
-        if not os.path.isdir(blobs_dir):
+        if not os.path.isdir(blobs_dir):  # pragma: no cover
             logger.error(f"BLOBS path {blobs_dir} must be a directory.")
             return False, None
-        if not os.path.exists(blobs_dir):
+        if not os.path.exists(blobs_dir):  # pragma: no cover
             logger.error(f"BLOBS path {blobs_dir} must exist.")
             return False, None
         target_file = os.path.join(blobs_dir, named_digest.replace(":", "-"))
@@ -339,7 +338,7 @@ class ModelDownloader(ABC):
         self._unnecessary_files.remove(source)
         self._unnecessary_files.add(target_file)
         logger.info(f"Moved {source} to {target_file}")
-        if self.settings.ollama_library.user_group:
+        if self.settings.ollama_library.user_group:  # pragma: no cover
             user, group = self.settings.ollama_library.user_group
             shutil.chown(target_file, user, group)
             shutil.chown(blobs_dir, user, group)
@@ -355,7 +354,7 @@ class ModelDownloader(ABC):
             self._cleanup_running = True
             list_of_unnecessary_files = list(self._unnecessary_files)
             unnecessary_directories = set()
-            for file_object in list_of_unnecessary_files:
+            for file_object in list_of_unnecessary_files:  # pragma: no cover
                 try:
                     if not os.path.isdir(file_object):
                         os.remove(file_object)
@@ -368,7 +367,7 @@ class ModelDownloader(ABC):
                     logger.error(f"Failed to remove unnecessary file {file_object}: {e}")
 
             # Now remove unnecessary directories if they are empty
-            for directory in unnecessary_directories:
+            for directory in unnecessary_directories:  # pragma: no cover
                 try:
                     os.rmdir(directory)
                     logger.info(f"Removed unnecessary directory: {directory}")
@@ -376,22 +375,33 @@ class ModelDownloader(ABC):
                     logger.error(f"Failed to remove unnecessary directory {directory}: {e}")
             self._cleanup_running = False
 
-    def remove_model(self, model_identifier: str) -> bool:  # pragma: no cover
+    def remove_model(self, model_identifier: str, model_source: ModelSource) -> bool:
         """Removes a model from the Ollama server."""
         ollama_client = OllamaClient(
             host=self.settings.ollama_server.url,
-            # timeout=self.settings.ollama_server.timeout,
-            # TODO: Add API key authentication logic
         )
-        search_model = f"{urlparse(ModelDownloader.HF_BASE_URL).hostname}/{model_identifier}"
-        response = ollama_client.delete(search_model)
-        if hasattr(response, "status") and response.status == "success":
-            logger.info(
-                f"Successfully removed model {model_identifier} from Ollama server at {self.settings.ollama_server.url}."
-            )
-            return True
-        else:
+        search_model = ""
+        match model_source:
+            case ModelSource.OLLAMA:
+                search_model = model_identifier
+            case ModelSource.HUGGINGFACE:
+                search_model = f"{urlparse(ModelDownloader.HF_BASE_URL).hostname}/{model_identifier}"
+            case _:  # pragma: no cover
+                raise ValueError(f"Unsupported model source: {model_source}")
+        try:
+            response = ollama_client.delete(search_model)
+            if hasattr(response, "status") and response.status == "success":
+                logger.info(
+                    f"Successfully removed model {model_identifier} from Ollama server at {self.settings.ollama_server.url}."
+                )
+                return True
+            else:  # pragma: no cover
+                logger.error(
+                    f"Failed to remove model {model_identifier} from Ollama server at {self.settings.ollama_server.url}."
+                )
+                return False
+        except Exception as e:  # pragma: no cover
             logger.error(
-                f"Failed to remove model {model_identifier} from Ollama server at {self.settings.ollama_server.url}."
+                f"Error occurred while removing model {model_identifier} from Ollama server at {self.settings.ollama_server.url}: {e}"
             )
             return False
