@@ -22,8 +22,8 @@ if os.path.exists(".env"):
 class EnvVar:
     """Environment Variables for Ollama Downloader."""
 
-    LOG_LEVEL = env.str(
-        "LOG_LEVEL",
+    OD_LOG_LEVEL = env.str(
+        "OD_LOG_LEVEL",
         default="info",
         validate=OneOf(["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
     ).upper()
@@ -34,7 +34,7 @@ class EnvVar:
 
 
 logging.basicConfig(
-    level=EnvVar.LOG_LEVEL,
+    level=EnvVar.OD_LOG_LEVEL,
     format="%(message)s",
     datefmt="[%X]",
     handlers=[RichHandler(rich_tracebacks=False, markup=True, show_path=False, show_time=False)],

@@ -1,5 +1,7 @@
 conf_dir := quote(invocation_dir() / "conf")
 conf_backup_dir := quote(invocation_dir() / "conf_backup")
+native_file := "od-native"
+product_name := "ollama-downloader"
 
 # Install minimal project dependencies in a virtual environment
 install:
@@ -64,3 +66,30 @@ test-coverage:
     @[ -d {{conf_backup_dir}} ] && mv {{conf_backup_dir}} {{conf_dir}} && echo "Configuration restored." || echo "Configuration did not exist, skipping restore."
     @uv run coverage report -m
     @echo "Test coverage complete."
+
+# Run tests with profiling but no coverage
+test-with-profile:
+    @echo "Running tests with profiling..."
+    @uv run --group test pytest --capture=tee-sys -vvv tests/ --profile --profile-svg
+    @echo "Tests with profiling complete."
+
+# Compile native binary with Nuitka
+build-native-nuitka:
+    @echo "Building native binary with Nuitka..."
+    # Remove the existing native file
+    @rm -f {{native_file}} || true
+    @uv run python -m nuitka \
+            --onefile \
+            --standalone \
+            --clean-cache="all" \
+            --disable-cache="all" \
+            --remove-output \
+            --static-libpython="yes" \
+            --noinclude-pytest-mode="nofollow" \
+            --product-name={{product_name}} \
+            --product-version=$(sed -n 's/^version = "\([0-9.]*\).*/\1/p' pyproject.toml | head -n 1) \
+            --output-file={{native_file}} \
+            --macos-prohibit-multiple-instances \
+            --macos-app-name={{product_name}} \
+            src/ollama_downloader/cli.py
+    @echo "Native binary built."
