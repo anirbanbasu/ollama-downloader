@@ -8,9 +8,9 @@ import psutil
 
 try:
     import grp  # Unix, macOS and Linux only
-except ImportError:
+except ImportError:  # pragma: no cover
     # Windows does not have the grp module
-    grp = None  # type: ignore[assignment]
+    grp = None  # ty: ignore[invalid-assignment]
 
 from ollama import Client as OllamaClient
 
@@ -46,14 +46,17 @@ class OllamaSystemInfo:
 
     def is_windows(self) -> bool:
         """Check if the operating system is Windows."""
-        if self.os_name == "":
-            self.os_name = platform.system()
+        self.os_name = platform.system()
         return self.os_name.lower() == "windows"
+
+    def is_linux(self) -> bool:
+        """Check if the operating system is Linux."""
+        self.os_name = platform.system()
+        return self.os_name.lower() == "linux"
 
     def is_macos(self) -> bool:
         """Check if the operating system is macOS."""
-        if self.os_name == "":
-            self.os_name = platform.system()
+        self.os_name = platform.system()
         return self.os_name.lower() == "darwin"
 
     def is_running(self) -> bool:
@@ -81,13 +84,13 @@ class OllamaSystemInfo:
                         logger.debug(
                             f"{len(self.process_env_vars)} environment variables of process {proc.name()} ({self.process_id}, {proc.status()}) were obtained."
                         )
-                except psutil.NoSuchProcess:
+                except psutil.NoSuchProcess:  # pragma: no cover
                     ...
-                except psutil.AccessDenied:
+                except psutil.AccessDenied:  # pragma: no cover
                     logger.warning(
                         f"Environment variables of process {proc.name()} ({self.process_id}, {proc.status()}) cannot be retrieved. Run auto-config as super-user."
                     )
-            else:
+            else:  # pragma: no cover
                 logger.warning("Ollama process not found. Maybe, it is not installed or it is not running.")
         return self.process_id != -1
 
@@ -100,9 +103,9 @@ class OllamaSystemInfo:
             proc = psutil.Process(self.process_id)
             try:
                 self.parent_process_id = proc.ppid()
-            except psutil.NoSuchProcess:
+            except psutil.NoSuchProcess:  # pragma: no cover
                 ...
-            except psutil.AccessDenied:
+            except psutil.AccessDenied:  # pragma: no cover
                 logger.warning(
                     f"Parent process ID of process {proc.name()} ({self.process_id}, {proc.status()}) cannot be retrieved. Run auto-config as super-user."
                 )
@@ -121,7 +124,7 @@ class OllamaSystemInfo:
                 logger.debug(
                     f"Owner of process {proc.name()} ({self.process_id}, {proc.status()}): {self.process_owner}"
                 )
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
+            except (psutil.NoSuchProcess, psutil.AccessDenied):  # pragma: no cover
                 ...
         return self.process_owner
 
@@ -129,7 +132,7 @@ class OllamaSystemInfo:
         """Check if the environment variable 'OLLAMA_MODELS' is set in the Ollama process."""
         if self.process_env_vars:
             return "OLLAMA_MODELS" in self.process_env_vars
-        return False
+        return False  # pragma: no cover
 
     def infer_listening_on(self) -> str | None:
         """Get the address and port the Ollama process is listening on."""
@@ -147,9 +150,9 @@ class OllamaSystemInfo:
                         self.listening_on = f"http://{laddr}"
                         # Just take the first listening address
                         break
-            except psutil.NoSuchProcess:
+            except psutil.NoSuchProcess:  # pragma: no cover
                 ...
-            except psutil.AccessDenied:
+            except psutil.AccessDenied:  # pragma: no cover
                 logger.warning(
                     f"Parent process ID of process {proc.name()} ({self.process_id}, {proc.status()}) cannot be retrieved. Run auto-config as super-user."
                 )
@@ -171,7 +174,7 @@ class OllamaSystemInfo:
                         model_blob_path = match.group(1).strip()
                         likely_models_dir = str(os.path.dirname(os.path.dirname(model_blob_path)))
                         self.models_dir_path = likely_models_dir.replace(os.path.expanduser("~"), "~")
-                else:
+                else:  # pragma: no cover
                     logger.warning(
                         "No models are currently installed in Ollama. Cannot infer the models directory path."
                     )
@@ -182,7 +185,7 @@ class OllamaSystemInfo:
         self.get_parent_process_id()
         if self.parent_process_id not in [-1, 1]:
             self.likely_daemon = False
-        else:
+        else:  # pragma: no cover
             proc = psutil.Process(self.process_id)
             if proc.username().lower() in ["ollama", "root"] and (
                 not hasattr(proc, "terminal") or proc.terminal() is None

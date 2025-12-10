@@ -1,3 +1,4 @@
+import logging
 from importlib.metadata import version
 
 import pytest
@@ -110,7 +111,7 @@ class TestTyperCalls:
         assert result.exit_code == 0
         assert result.output == ""
 
-    def test_hf_list_tags(self, runner):
+    def test_hf_list_tags(self, runner, caplog):
         """Test the 'list-tags' command of the CLI."""
         result = runner.invoke(
             app,
@@ -121,20 +122,30 @@ class TestTyperCalls:
         assert f"{model_identifier}:F16" in result.output
         assert f"{model_identifier}:Q4_K_M" in result.output
         # Test with a model that does not have support for Ollama
-        result = runner.invoke(
-            app=app,
-            args=["hf-list-tags", "facebook/sam3"],
-        )
-        assert result.exit_code == 0
-        # TODO: We should capture the error from the logging messages
-        assert result.output == ""
+        with caplog.at_level(logging.INFO):
+            result = runner.invoke(
+                app=app,
+                args=["hf-list-tags", ollama_unsupported_model := "facebook/sam3"],
+            )
+            assert result.exit_code == 0
+            assert any(
+                f"Error in listing model tags. The model {ollama_unsupported_model} has no support for Ollama."
+                in record.message
+                for record in caplog.records
+            ), "Expected error log message not found."
+            assert result.output == ""
         # Test with a made-up model that should not exist
-        result = runner.invoke(
-            app=app,
-            args=["hf-list-tags", "made-up-model-that-should-not-exist"],
-        )
-        # Should be an empty output while the error will be logged but exit code will still be 0
-        assert result.output == ""
+        with caplog.at_level(logging.INFO):
+            result = runner.invoke(
+                app=app,
+                args=["hf-list-tags", "made-up/model-that-should-not-exist"],
+            )
+            # Should be an empty output while the error will be logged but exit code will still be 0
+            assert any(
+                "Error in listing model tags. Client error '401 Unauthorized' for url" in record.message
+                for record in caplog.records
+            ), "Expected error log message not found."
+            assert result.output == ""
 
     def test_hf_model_download(self, runner):
         """Test the 'hf-model-download' command of the CLI."""
