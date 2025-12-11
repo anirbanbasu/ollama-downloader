@@ -3,16 +3,13 @@ import os
 import pstats
 import re
 import subprocess
+
 from rich import print as print
 
 
-def filter_pstats_and_save_svg(
-    input_file: str, output_file: str, keep_regexes: list[str]
-):
-    """
-    Loads pstats data, filters it, and saves a new pstats file.
-    `keep_regexes` is a list of regex patterns to match against function names.
-    """
+def filter_pstats_and_save_svg(input_file: str, output_file: str, keep_regexes: list[str]):
+    """Loads pstats data, filters it, and saves a new pstats file."""
+    """`keep_regexes` is a list of regex patterns to match against function names."""
     stats = pstats.Stats(input_file)
     # FIXME: Get the raw dictionary of stats -- this is very hacky because pstats doesn't expose this directly.
     original_stats = stats.stats  # type: ignore[attr-defined]
@@ -55,6 +52,7 @@ def filter_pstats_and_save_svg(
 
 
 def main():
+    """Main function to filter pstats data and save as SVG."""
     # Define the patterns to keep. This should capture your tests and application code.
     patterns_to_keep = [
         # Your specific test files or modules
@@ -80,12 +78,8 @@ def main():
         filter_pstats_and_save_svg(target_path, output_path, patterns_to_keep)
         print(f"Filtered profile data saved to {output_path}.")
 
-        conversion_command = (
-            f"gprof2dot -f pstats {output_path} | dot -Tsvg -o {output_svg_path}"
-        )
-        result = subprocess.run(
-            conversion_command, capture_output=True, shell=True, check=True
-        )
+        conversion_command = f"gprof2dot -f pstats {output_path} | dot -Tsvg -o {output_svg_path}"
+        result = subprocess.run(conversion_command, capture_output=True, shell=True, check=True)
         print(f"{result.args} completed with return code {result.returncode}.")
         if result.returncode != 0:
             print(f"stderr: {result.stderr.decode()}")

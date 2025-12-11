@@ -31,4 +31,7 @@ jobs:
         run: uv sync --all-groups
 
       - name: Run tests using pytest
-        run: uv run --group test pytest -v tests/
+        run: uv run --group test coverage run -m pytest --capture=tee-sys -vvv tests/
+
+      - name: Generate coverage report
+        run: uv run coverage report -m
