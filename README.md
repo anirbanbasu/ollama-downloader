@@ -1,4 +1,4 @@
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3120/) [![pytest](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml/badge.svg)](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest.yml) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/anirbanbasu/ollama-downloader/latest)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue?logo=python&logoColor=3776ab&labelColor=e4e4e4)](https://www.python.org/downloads/release/python-3120/) [![pytest](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest-coverage.yml/badge.svg)](https://github.com/anirbanbasu/ollama-downloader/actions/workflows/uv-pytest-coverage.yml) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/anirbanbasu/ollama-downloader/latest)
  [![PyPI](https://img.shields.io/pypi/v/ollama-downloader?label=pypi%20package)](https://pypi.org/project/ollama-downloader/#history)
 
 # Ollama (library and Hugging Face) model downloader
@@ -45,11 +45,11 @@ The directory where you clone this repository will be referred to as the _workin
 ### Using `pip`
 Although the rest of this README details the installation and usage of this downloader tool using the `uv` package manager, you can also use `pip` to install it from PyPI in a virtual environment of your choice by running `pip install ollama-downloader`. Thereafter, the scripts `od` and `ollama-downloader` will be available to you in that virtual environment.
 
-### Using `uv` (preferred)
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/). To install the project with its minimal dependencies in a virtual environment, run the following in the _WD_. To install all non-essential dependencies (_which are required for developing and testing_), replace the `--no-dev` with the `--all-groups` flag in the following command.
+### Using `uv` and `just` (preferred)
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/). Install [`just`](https://github.com/casey/just?tab=readme-ov-file#installation). To install the project with its minimal dependencies in a virtual environment, run the following in the _WD_. To install all non-essential dependencies (_which are required for developing and testing_), replace `install` with `install-all` in the following command.
 
 ```bash
-uv sync --no-dev
+just install
 ```
 
 ## Configuration
@@ -99,7 +99,7 @@ All the environment variables, listed below, are _optional_. If not specified, t
 
 | Variable           | Description and default value(s)                                     |
 |--------------------|----------------------------------------------------------------------|
-| `LOG_LEVEL`        | The level to be set for the logger. Default value is `INFO`. See all valid values in [Python 3 logging documentation](https://docs.python.org/3/library/logging.html#levels).|
+| `OD_LOG_LEVEL`        | The level to be set for the logger. Default value is `INFO`. See all valid values in [Python 3 logging documentation](https://docs.python.org/3/library/logging.html#levels).|
 | `OD_SETTINGS_FILE` | The name of the settings file. Default value is `conf/settings.json` relative to the _WD_.|
 | `OD_UA_NAME_VER`   | The application name and version to be prepended to the User-Agent header when making HTTP(S) requests. Default value is `ollama-downloader/0.1.0`.|
 
@@ -355,49 +355,28 @@ Usage: od hf-list-tags [OPTIONS] MODEL_IDENTIFIER
 
 ## Testing, coverage and profiling
 
-To run the provided set of tests using `pytest`, execute the following in _WD_. Append the flag `--capture=tee-sys` to the following command to see the console output during the tests. Note that the model download tests run as sub-processes. Their outputs will not be visible by using this flag.
+To run the provided set of tests using `pytest` and `coverage`, execute the following in _WD_.
 
 ```bash
-uv run --group test pytest tests/
-```
-
-To get a report on coverage while invoking the tests, run the following two commands.
-
-```bash
-uv run --group test coverage run -m pytest tests/
-uv run coverage report
+just test-coverage
 ```
 
 This will result in an output similar to the following.
 
 ```bash
-Name                                                          Stmts   Miss  Cover
----------------------------------------------------------------------------------
-src/ollama_downloader/__init__.py                                18      3    83%
-src/ollama_downloader/cli.py                                    194     21    89%
-src/ollama_downloader/data/__init__.py                            0      0   100%
-src/ollama_downloader/data/data_models.py                        86     19    78%
-src/ollama_downloader/downloader/__init__.py                      0      0   100%
-src/ollama_downloader/downloader/hf_model_downloader.py          90      6    93%
-src/ollama_downloader/downloader/model_downloader.py            167     43    74%
-src/ollama_downloader/downloader/ollama_model_downloader.py      91      9    90%
-src/ollama_downloader/sysinfo.py                                115     20    83%
-tests/__init__.py                                                 0      0   100%
-tests/test_data_models.py                                        33      1    97%
-tests/test_system_info.py                                        54      0   100%
-tests/test_typer.py                                              78      0   100%
----------------------------------------------------------------------------------
-TOTAL                                                           926    122    87%
+Name    Stmts   Miss    Cover   Missing
+---------------------------------------
+TOTAL     649      0  100.00%
 ```
 
-There is a handy script for running tests `run_tests.sh` in _WD_. It can accept any parameters to be passed to `pytest`. Thus, tests can be filtered using the `-k` to specify tests to run or not. Likewise, profiling can be done by calling `./run_tests.sh --profile`. The resulting profile information will be generated and saved in _WD_`/prof`. A SVG of the complete profile can be generated by calling `./run_tests.sh --profile --profile-svg`.
+Profiling can be done by calling `just test-with-profiling`. The resulting profile information will be generated and saved in _WD_`/prof`. A SVG of the complete profile can be generated too.
 
 Profile information can also be filtered and a SVG of the filtered profile generated by editing the somewhat hacky script _WD_`/tests/filter_profile_data.py`.
 The script can be run using `uv` as `uv run tests/filter_profile_data.py`.
 
 ## Native compilation and execution
 
-This is an _experimental feature_ by which Ollama downloader can be compiled into a single executable binary file -- `od-native` -- using [Nuitka](https://nuitka.net/). To compile the native binary on your platform, run the script `./compile_native.sh`. Notice that you must have the `dev` group dependencies of the project installed.
+This is an _experimental feature_ by which Ollama downloader can be compiled into a single executable binary file -- `od-native` -- using [Nuitka](https://nuitka.net/). To compile the native binary on your platform, run `just build-native-nuitka`. Notice that you must have the `dev` group dependencies of the project installed.
 
 _Note that having a `.env` file may cause the natively compiled binary to crash, with an error message `OSError: Starting path not found`._ Should you want to pass any of the environment variables to the executable, do so using the command line interface.
 
@@ -413,12 +392,12 @@ To do so, add the new tap by running: `brew tap anirbanbasu/tap`. Then, Ollama d
 
 ## Contributing
 
-Install [`pre-commit`](https://pre-commit.com/) for Git by using the `--all-groups` flag for `uv sync`.
+Install [`prek`](https://github.com/j178/prek?tab=readme-ov-file#installation).
 
-Then enable `pre-commit` by running the following in the _WD_.
+Then enable `pre-commit` hooks by running the following in the _WD_.
 
 ```bash
-pre-commit install
+just install-pre-commit-hooks
 ```
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
