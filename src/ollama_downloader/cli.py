@@ -107,26 +107,27 @@ class OllamaDownloaderCLIApp:
             raise RuntimeError(
                 "Automatic configuration could not infer some settings. Maybe super-user permissions are necessary. Or, perhaps, Ollama has no models installed yet."
             )
-        inferred_settings = AppSettings()
-        inferred_settings.ollama_server.url = system_info.listening_on
-        inferred_settings.ollama_library.models_path = system_info.models_dir_path
-        if system_info.is_likely_daemon():  # pragma: no cover
-            if system_info.is_macos():
-                logger.warning(
-                    "Automatic configuration on macOS maybe flawed if Ollama is configured to run as a system background service."
+        else:  # pragma: no cover
+            inferred_settings = AppSettings()
+            inferred_settings.ollama_server.url = system_info.listening_on
+            inferred_settings.ollama_library.models_path = system_info.models_dir_path
+            if system_info.is_likely_daemon():  # pragma: no cover
+                if system_info.is_macos():
+                    logger.warning(
+                        "Automatic configuration on macOS maybe flawed if Ollama is configured to run as a system background service."
+                    )
+                inferred_settings.ollama_library.user_group = (
+                    system_info.process_owner[0],
+                    system_info.process_owner[2],
                 )
-            inferred_settings.ollama_library.user_group = (
-                system_info.process_owner[0],
-                system_info.process_owner[2],
-            )
-        return inferred_settings.model_dump_json()
+            return inferred_settings.model_dump_json()
 
     async def run_auto_config(self):
         """Run the auto_config command and print the automatically inferred configuration."""
         try:
             result = await self._auto_config()
-            if result != {}:
-                print_json(json=result)  # pragma: no cover
+            if result != {}:  # pragma: no cover
+                print_json(json=result)
         except Exception as e:  # pragma: no cover
             logger.error(f"Error in generating automatic config. {e}")
             if isinstance(e, psutil.AccessDenied):
