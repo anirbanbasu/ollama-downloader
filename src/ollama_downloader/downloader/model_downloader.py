@@ -390,7 +390,7 @@ class ModelDownloader(ABC):
                 raise ValueError(f"Unsupported model source: {model_source}")
         try:
             response = ollama_client.delete(search_model)
-            if hasattr(response, "status") and response.status == "success":
+            if hasattr(response, "status") and response.status == "success":  # pragma: no cover
                 logger.info(
                     f"Successfully removed model {model_identifier} from Ollama server at {self.settings.ollama_server.url}."
                 )

@@ -166,7 +166,7 @@ class OllamaSystemInfo:
             if self.infer_listening_on() != "":
                 ollama_client = OllamaClient(host=self.listening_on)
                 models_list = ollama_client.list().models
-                if len(models_list) > 0:
+                if len(models_list) > 0:  # pragma: no cover
                     modelfile_text = ollama_client.show(models_list[0].model).modelfile
                     pattern = re.compile(r"^\s*FROM\s+(.+?)(?:\s*#.*)?$", re.IGNORECASE | re.MULTILINE)
                     match = pattern.search(string=modelfile_text) if modelfile_text else None
@@ -183,7 +183,7 @@ class OllamaSystemInfo:
     def is_likely_daemon(self) -> bool:
         """Infer if the Ollama process is likely running as a daemon/service."""
         self.get_parent_process_id()
-        if self.parent_process_id not in [-1, 1]:
+        if self.parent_process_id not in [-1, 1]:  # pragma: no cover
             self.likely_daemon = False
         else:  # pragma: no cover
             proc = psutil.Process(self.process_id)

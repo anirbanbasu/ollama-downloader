@@ -24,7 +24,10 @@ class TestOllamaSystemInfo:
     def test_is_linux_or_macos(self):
         """Test that the operating system is either Linux or macOS."""
         system_info = OllamaSystemInfo()
-        assert system_info.is_linux() or system_info.is_macos()
+        # Both need to be invoked to ensure coverage
+        is_linux = system_info.is_linux()
+        is_macos = system_info.is_macos()
+        assert is_linux or is_macos  # Only one of them should be True
 
     def test_access_env_vars(self):
         """Test accessing the environment variables of the Ollama process."""

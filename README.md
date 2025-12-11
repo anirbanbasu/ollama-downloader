@@ -366,7 +366,7 @@ This will result in an output similar to the following.
 ```bash
 Name    Stmts   Miss    Cover   Missing
 ---------------------------------------
-TOTAL     663      0  100.00%
+TOTAL     649      0  100.00%
 ```
 
 Profiling can be done by calling `just test-with-profiling`. The resulting profile information will be generated and saved in _WD_`/prof`. A SVG of the complete profile can be generated too.

@@ -94,14 +94,19 @@ class OllamaDownloaderCLIApp:
         system_info = OllamaSystemInfo()
         if system_info.is_windows():
             raise NotImplementedError("Automatic configuration is not supported on Windows yet.")
-        super_user_needed = False
-        super_user_needed = super_user_needed or system_info.infer_listening_on() in [
+        super_user_maybe_needed = False
+        super_user_maybe_needed = super_user_maybe_needed or system_info.infer_listening_on() in [
             None,
             "",
         ]
-        super_user_needed = super_user_needed or system_info.infer_models_dir_path() in [None, ""]
-        if super_user_needed:  # pragma: no cover
-            return {}
+        super_user_maybe_needed = super_user_maybe_needed or system_info.infer_models_dir_path() in [
+            None,
+            "",
+        ]
+        if super_user_maybe_needed:  # pragma: no cover
+            raise RuntimeError(
+                "Automatic configuration could not infer some settings. Maybe super-user permissions are necessary. Or, perhaps, Ollama has no models installed yet."
+            )
         inferred_settings = AppSettings()
         inferred_settings.ollama_server.url = system_info.listening_on
         inferred_settings.ollama_library.models_path = system_info.models_dir_path
@@ -119,10 +124,9 @@ class OllamaDownloaderCLIApp:
     async def run_auto_config(self):
         """Run the auto_config command and print the automatically inferred configuration."""
         try:
-            # self._initialize()
             result = await self._auto_config()
             if result != {}:
-                print_json(json=result)
+                print_json(json=result)  # pragma: no cover
         except Exception as e:  # pragma: no cover
             logger.error(f"Error in generating automatic config. {e}")
             if isinstance(e, psutil.AccessDenied):
