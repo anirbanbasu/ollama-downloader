@@ -1,9 +1,9 @@
 import logging
 import os
 from pathlib import Path
-from pydantic import AfterValidator, BaseModel, Field, HttpUrl
-from typing import Annotated, ClassVar, List, Optional, Tuple
+from typing import Annotated, ClassVar
 
+from pydantic import AfterValidator, BaseModel, Field, HttpUrl
 
 from ollama_downloader import EnvVar
 
@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class CustomValidators:
+    """Custom validators for Pydantic models."""
+
     @staticmethod
     def validate_path_as_dir(path_str: str) -> str:
         p = Path(os.path.expanduser(path_str))
@@ -27,11 +29,13 @@ class CustomValidators:
 
 
 class OllamaServer(BaseModel):
+    """Settings for connecting to the Ollama server."""
+
     url: Annotated[str, AfterValidator(CustomValidators.validate_url)] = Field(
         default="http://localhost:11434/",
         description="URL of the Ollama server.",
     )
-    api_key: Optional[str] = Field(
+    api_key: str | None = Field(
         default=None,
         description="API key for the Ollama server, if required.",
     )
@@ -42,9 +46,9 @@ class OllamaServer(BaseModel):
 
 
 class OllamaLibrary(BaseModel):
-    models_path: Annotated[
-        str, AfterValidator(CustomValidators.validate_path_as_dir)
-    ] = Field(
+    """Settings for accessing the Ollama library and storing models locally."""
+
+    models_path: Annotated[str, AfterValidator(CustomValidators.validate_path_as_dir)] = Field(
         # Windows environment variables: https://learn.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables
         default=os.path.join(
             "~",
@@ -53,33 +57,31 @@ class OllamaLibrary(BaseModel):
         ),
         description="Path to the Ollama models on the filesystem. This should be a directory where model BLOBs and manifest metadata are stored.",
     )
-    registry_base_url: Annotated[str, AfterValidator(CustomValidators.validate_url)] = (
-        Field(
-            default="https://registry.ollama.ai/v2/library/",
-            description="URL of the remote registry for Ollama models.",
-        )
+    registry_base_url: Annotated[str, AfterValidator(CustomValidators.validate_url)] = Field(
+        default="https://registry.ollama.ai/v2/library/",
+        description="URL of the remote registry for Ollama models.",
     )
-    library_base_url: Annotated[str, AfterValidator(CustomValidators.validate_url)] = (
-        Field(
-            default="https://ollama.com/library/",
-            description="Base URL for the Ollama library. This is used to web scrape model metadata.",
-        )
+    library_base_url: Annotated[str, AfterValidator(CustomValidators.validate_url)] = Field(
+        default="https://ollama.com/library/",
+        description="Base URL for the Ollama library. This is used to web scrape model metadata.",
     )
-    verify_ssl: Optional[bool] = Field(
+    verify_ssl: bool | None = Field(
         default=True,
         description="Whether to verify SSL certificates when connecting to the Ollama server or registry. Set to False to disable SSL verification (not recommended for production use).",
     )
-    timeout: Optional[float] = Field(
+    timeout: float | None = Field(
         default=120.0,
         description="Timeout for HTTP requests to the Ollama server or registry, in seconds.",
     )
-    user_group: Optional[Tuple[str, str]] = Field(
+    user_group: tuple[str, str] | None = Field(
         default=None,
         description="A tuple specifying the username and the group that should own the Ollama models path. If not provided, the current user and group will be used.",
     )
 
 
 class AppSettings(BaseModel):
+    """Application settings for the Ollama Downloader."""
+
     ollama_server: OllamaServer = Field(
         default=OllamaServer(),
         description="Settings for the Ollama server connection.",
@@ -102,8 +104,7 @@ class AppSettings(BaseModel):
     def load_or_create_default(
         settings_file: str = EnvVar.OD_SETTINGS_FILE,
     ) -> "AppSettings | None":
-        """
-        Load settings from the configuration file, or create default settings if the file does not exist.
+        """Load settings from the configuration file, or create default settings if the file does not exist.
 
         Returns:
             AppSettings: The application settings loaded from the configuration file,
@@ -113,7 +114,7 @@ class AppSettings(BaseModel):
         if settings is None:
             # This will be a singleton instance
             settings = AppSettings()
-            if not AppSettings.save_settings(settings, settings_file):
+            if not AppSettings.save_settings(settings, settings_file):  # pragma: no cover
                 return None
         return settings
 
@@ -121,31 +122,29 @@ class AppSettings(BaseModel):
     def load_settings(
         settings_file: str = EnvVar.OD_SETTINGS_FILE,
     ) -> "AppSettings | None":
-        """
-        Load settings from the configuration file.
+        """Load settings from the configuration file.
 
         Returns:
             AppSettings: The application settings loaded from the configuration file.
             If the file does not exist or cannot be parsed, returns None.
         """
         try:
-            with open(settings_file, "r") as f:
+            with open(settings_file) as f:
                 # Parse the JSON file into the AppSettings model
                 return_value = AppSettings.model_validate_json(f.read())
             return return_value
         except FileNotFoundError:
             logger.error(f"Configuration file {settings_file} not found.")
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error(f"Error loading settings from {settings_file}. {e}")
-        return None
+        return None  # pragma: no cover
 
     @staticmethod
     def save_settings(
         settings: "AppSettings",
         settings_file: str = EnvVar.OD_SETTINGS_FILE,
     ) -> bool:
-        """
-        Save the application settings to the configuration file.
+        """Save the application settings to the configuration file.
 
         Returns:
             bool: True if settings were saved successfully, False otherwise.
@@ -158,12 +157,14 @@ class AppSettings(BaseModel):
                 f.write(settings.model_dump_json(indent=4))
             logger.info(f"Settings saved to {settings_file}")
             return True
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error(f"Error saving settings to {settings_file}. {e}")
             return False
 
 
 class ImageManifestConfig(BaseModel):
+    """Configuration section of the image manifest."""
+
     mediaType: str = Field(
         ...,
         description="The media type of the image manifest configuration.",
@@ -179,6 +180,8 @@ class ImageManifestConfig(BaseModel):
 
 
 class ImageManifestLayerEntry(BaseModel):
+    """A single layer entry in the image manifest."""
+
     mediaType: str = Field(
         ...,
         description="The media type of the layer.",
@@ -192,13 +195,15 @@ class ImageManifestLayerEntry(BaseModel):
         description="The digest of the layer, used for content addressing.",
     )
     # Note that these URLs may not be present in all manifests and may not be possible to validate as HttpUrls.
-    urls: Optional[list[str]] = Field(
+    urls: list[str] | None = Field(
         default=None,
         description="Optional list of URLs where the layer can be downloaded from. This is useful for layers that are hosted on multiple locations.",
     )
 
 
 class ImageManifest(BaseModel):
+    """Data model representing an Ollama image manifest."""
+
     # See: https://distribution.github.io/distribution/spec/manifest-v2-2/#image-manifest
     schemaVersion: int = Field(
         ...,
@@ -212,7 +217,7 @@ class ImageManifest(BaseModel):
         ...,
         description="Configuration for the image manifest, including media type, size, and digest.",
     )
-    layers: Optional[List[ImageManifestLayerEntry]] = Field(
+    layers: list[ImageManifestLayerEntry] | None = Field(
         None,
         description="List of layers in the image manifest, each with its media type, size, and digest.",
     )

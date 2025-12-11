@@ -1,0 +1,35 @@
+on:
+    # push:
+    # tags: 'v*'
+    # Alternatively, trigger this workflow after a stable release has been published:
+    release:
+        types: [released]
+
+jobs:
+    homebrew:
+        name: Bump Homebrew formula
+        # Skip this job in case of git pushes to prerelease tags
+        if: ${{ github.event_name != 'push' || !contains(github.ref, '-') }}
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - name: Extract version
+              id: extract-version
+              # Strip a string prefix from the git tag name:
+              run: |
+                  echo "tag-name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+            - uses: mislav/bump-homebrew-formula-action@v3
+              with:
+                  formula-name: ollama-downloader
+                  formula-path: Formula/ollama-downloader.rb
+                  homebrew-tap: anirbanbasu/homebrew-tap
+                  base-branch: main
+                  commit-message: |
+                      {{formulaName}} {{version}}
+
+                      Created by https://github.com/mislav/bump-homebrew-formula-action
+              env:
+                  COMMITTER_TOKEN: ${{ secrets.COMMITTER_TOKEN }}
+                  # GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
