@@ -158,15 +158,15 @@ wheels = [
 
 [[package]]
 name = "environs"
-version = "14.5.0"
+version = "14.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "marshmallow" },
     { name = "python-dotenv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/aa/75/06801d5beeb398ed3903167af9376bb81c4ac41c44a53d45193065ebb1a8/environs-14.5.0.tar.gz", hash = "sha256:f7b8f6fcf3301bc674bc9c03e39b5986d116126ffb96764efd34c339ed9464ee", size = 35426, upload-time = "2025-11-02T21:30:36.78Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fb/c7/94f97e6e74482a50b5fc798856b6cc06e8d072ab05a0b74cb5d87bd0d065/environs-14.6.0.tar.gz", hash = "sha256:ed2767588deb503209ffe4dd9bb2b39311c2e4e7e27ce2c64bf62ca83328d068", size = 35563, upload-time = "2026-02-20T04:02:08.869Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/f3/6961beb9a1e77d01dee1dd48f00fb3064429c8abcfa26aa863eb7cb2b6dd/environs-14.5.0-py3-none-any.whl", hash = "sha256:1abd3e3a5721fb09797438d6c902bc2f35d4580dfaffe68b8ee588b67b504e13", size = 17202, upload-time = "2025-11-02T21:30:35.186Z" },
+    { url = "https://files.pythonhosted.org/packages/97/a8/c070e1340636acb38d4e6a7e45c46d168a462b48b9b3257e14ca0e5af79b/environs-14.6.0-py3-none-any.whl", hash = "sha256:f8fb3d6c6a55872b0c6db077a28f5a8c7b8984b7c32029613d44cef95cfc0812", size = 17205, upload-time = "2026-02-20T04:02:07.299Z" },
 ]
 
 [[package]]
@@ -669,15 +669,15 @@ wheels = [
 
 [[package]]
 name = "rich"
-version = "14.3.2"
+version = "14.3.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py" },
     { name = "pygments" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/74/99/a4cab2acbb884f80e558b0771e97e21e939c5dfb460f488d19df485e8298/rich-14.3.2.tar.gz", hash = "sha256:e712f11c1a562a11843306f5ed999475f09ac31ffb64281f73ab29ffdda8b3b8", size = 230143, upload-time = "2026-02-01T16:20:47.908Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b3/c6/f3b320c27991c46f43ee9d856302c70dc2d0fb2dba4842ff739d5f46b393/rich-14.3.3.tar.gz", hash = "sha256:b8daa0b9e4eef54dd8cf7c86c03713f53241884e814f4e2f5fb342fe520f639b", size = 230582, upload-time = "2026-02-19T17:23:12.474Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/45/615f5babd880b4bd7d405cc0dc348234c5ffb6ed1ea33e152ede08b2072d/rich-14.3.2-py3-none-any.whl", hash = "sha256:08e67c3e90884651da3239ea668222d19bea7b589149d8014a21c633420dbb69", size = 309963, upload-time = "2026-02-01T16:20:46.078Z" },
+    { url = "https://files.pythonhosted.org/packages/14/25/b208c5683343959b670dc001595f2f3737e051da617f66c31f7c4fa93abc/rich-14.3.3-py3-none-any.whl", hash = "sha256:793431c1f8619afa7d3b52b2cdec859562b950ea0d4b6b505397612db8d5362d", size = 310458, upload-time = "2026-02-19T17:23:13.732Z" },
 ]
 
 [[package]]
@@ -724,7 +724,7 @@ wheels = [
 
 [[package]]
 name = "typer"
-version = "0.23.1"
+version = "0.24.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
@@ -732,9 +732,9 @@ dependencies = [
     { name = "rich" },
     { name = "shellingham" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fd/07/b822e1b307d40e263e8253d2384cf98c51aa2368cc7ba9a07e523a1d964b/typer-0.23.1.tar.gz", hash = "sha256:2070374e4d31c83e7b61362fd859aa683576432fd5b026b060ad6b4cd3b86134", size = 120047, upload-time = "2026-02-13T10:04:30.984Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/b6/3e681d3b6bb22647509bdbfdd18055d5adc0dce5c5585359fa46ff805fdc/typer-0.24.0.tar.gz", hash = "sha256:f9373dc4eff901350694f519f783c29b6d7a110fc0dcc11b1d7e353b85ca6504", size = 118380, upload-time = "2026-02-16T22:08:48.496Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d5/91/9b286ab899c008c2cb05e8be99814807e7fbbd33f0c0c960470826e5ac82/typer-0.23.1-py3-none-any.whl", hash = "sha256:3291ad0d3c701cbf522012faccfbb29352ff16ad262db2139e6b01f15781f14e", size = 56813, upload-time = "2026-02-13T10:04:32.008Z" },
+    { url = "https://files.pythonhosted.org/packages/85/d0/4da85c2a45054bb661993c93524138ace4956cb075a7ae0c9d1deadc331b/typer-0.24.0-py3-none-any.whl", hash = "sha256:5fc435a9c8356f6160ed6e85a6301fdd6e3d8b2851da502050d1f92c5e9eddc8", size = 56441, upload-time = "2026-02-16T22:08:47.535Z" },
 ]
 
 [[package]]

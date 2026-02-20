@@ -3,15 +3,11 @@ import logging
 from typing import Annotated, override
 from urllib.parse import urlparse
 
-# import lxml.html
 from ollama import Client as OllamaClient
 from pydantic import Field
 
 from ollama_downloader.data.data_models import ImageManifest
 from ollama_downloader.downloader.model_downloader import ModelDownloader, ModelSource
-
-# from huggingface_hub import configure_http_backend
-# import requests  # type: ignore
 
 # Initialize the logger
 logger = logging.getLogger(__name__)
