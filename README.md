@@ -3,7 +3,7 @@
 
 # Ollama (library and Hugging Face) model downloader
 
-**NOTE**: As of February 20, 2026, this project is being deprecated in favour of [ODIR](https://github.com/anirbanbasu/odir), which is almost a drop-in replacement with better performance and smaller disk footprint. This repository will be eventually archived. The Homebrew formula for this project, `anirbanbasu/tap/ollama-downloader` has been deprecated in favour of `anirbanbasu/tap/odir`.
+**NOTE**: Check the [deprecation and archival notice](https://github.com/anirbanbasu/ollama-downloader/discussions/45).
 
 Rather evident from the name, this is a tool to help download models for [Ollama](https://ollama.com/) including [supported models from Hugging Face](https://huggingface.co/models?apps=ollama). However, doesn't Ollama already download models from its library using `ollama pull <model:tag>`?
 
