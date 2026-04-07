@@ -12,7 +12,7 @@ def filter_pstats_and_save_svg(input_file: str, output_file: str, keep_regexes: 
     """`keep_regexes` is a list of regex patterns to match against function names."""
     stats = pstats.Stats(input_file)
     # FIXME: Get the raw dictionary of stats -- this is very hacky because pstats doesn't expose this directly.
-    original_stats = stats.stats  # type: ignore[attr-defined]
+    original_stats = stats.stats  # ty: ignore[unresolved-attribute]
 
     filtered_stats = {}
 
@@ -47,7 +47,7 @@ def filter_pstats_and_save_svg(input_file: str, output_file: str, keep_regexes: 
         if func in original_stats:
             filtered_stats[func] = original_stats[func]
 
-    stats.stats = filtered_stats  # type: ignore[attr-defined]
+    stats.stats = filtered_stats  # ty: ignore[unresolved-attribute]
     stats.dump_stats(output_file)
 
 

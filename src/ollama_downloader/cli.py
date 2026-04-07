@@ -34,8 +34,6 @@ class OllamaDownloaderCLIApp:
         # Set up signal handlers for graceful shutdown
         for sig in [signal.SIGINT, signal.SIGTERM]:
             signal.signal(sig, self._interrupt_handler)
-        self._model_downloader: OllamaModelDownloader = None
-        self._hf_model_downloader: HuggingFaceModelDownloader = None
 
     def _interrupt_handler(self, signum: int, frame: FrameType | None):  # pragma: no cover
         logger.warning("Interrupt signal received, performing clean shutdown")

@@ -40,7 +40,7 @@ class ModelDownloader(ABC):
     HF_BASE_URL = "https://hf.co/v2/"
 
     def __init__(self):
-        self.settings: AppSettings = AppSettings.load_or_create_default()
+        self.settings: AppSettings = AppSettings.load_or_create_default()  # ty: ignore[invalid-assignment]
         if not self.settings:  # pragma: no cover
             # This should never happen because line the AppSettings.load_or_create_default() will create default settings if loading fails.
             raise RuntimeError("Failed to load or create and save default settings.")
