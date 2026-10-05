@@ -10,7 +10,7 @@ try:
     import grp  # Unix, macOS and Linux only
 except ImportError:  # pragma: no cover
     # Windows does not have the grp module
-    grp = None  # ty: ignore[invalid-assignment]
+    grp = None
 
 from ollama import Client as OllamaClient
 
